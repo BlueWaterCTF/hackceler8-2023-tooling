@@ -199,6 +199,7 @@ class HackedGenericObject(engine.generics.GenericObject):
         super().draw()
         self._draw()
 
+        has_drawn_title = False
         # Draw a line and label to each object
         draw_label_blocklist = ["Player", "Spike"]
         if self.game is not None and self.game.item_tracer and not self.nametype in draw_label_blocklist:
@@ -236,8 +237,9 @@ class HackedGenericObject(engine.generics.GenericObject):
             if self.title_label is None:
                 self.title_label = arcade.Text(self.name or self.nametype, 0, 0, text_color, 11, anchor_x='center', anchor_y='baseline',)
             self.title_label.x = (r.x1() + r.x2()) // 2
-            self.title_label.y = r.y2() + 5 if not self._has_health() else r.y2() + 15
+            self.title_label.y = r.y2() + 5
             self.title_label.draw()
+            has_drawn_title = True
 
         # Draw soul grenade trajectory
         if self.game is not None and self.game.soul_tracer and self.game.current_mode.value == "platformer":
@@ -278,10 +280,13 @@ class HackedGenericObject(engine.generics.GenericObject):
 
         # Draw healthbar
         if self._has_health():
-            arcade.draw_xywh_rectangle_outline(self.get_leftmost_point(),
-                    self.get_highest_point(), self.max_health, 10, arcade.color.GREEN)
-            arcade.draw_xywh_rectangle_filled(self.get_leftmost_point(),
-                    self.get_highest_point(), self.health, 10, arcade.color.GREEN)
+            bar_width = self.max_health
+            bar_height = 10
+            bar_padding = 20 if has_drawn_title else 5
+            arcade.draw_xywh_rectangle_outline(self.get_leftmost_point() - bar_width // 2 + self.get_width() // 2,
+                    self.get_highest_point() + bar_padding, bar_width, bar_height, arcade.color.GREEN)
+            arcade.draw_xywh_rectangle_filled(self.get_leftmost_point() - bar_width // 2 + self.get_width() // 2,
+                    self.get_highest_point() + bar_padding, self.health, bar_height, arcade.color.GREEN)
 
     @property
     def hashable_outline(self):
