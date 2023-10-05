@@ -695,12 +695,12 @@ class HackedLudicer(ludicer.Ludicer):
         raw_pressed_keys = self.__dict__['raw_pressed_keys']
         if not self.real_time and not self.simulating and self.inverted_controls:
             raw_pressed_keys_copy = raw_pressed_keys.copy()
-            inverted_map = [
+            inverted_sets = [
                 (vk.VK_MOVE_UP[1], vk.VK_MOVE_DOWN[1]),
                 (vk.VK_MOVE_LEFT[1], vk.VK_MOVE_RIGHT[1]),
             ]
             dir_pressed = {}
-            for (k1, k2) in inverted_map.keys():
+            for (k1, k2) in inverted_sets:
                 if k1 in raw_pressed_keys:
                     if k2 not in raw_pressed_keys:
                         raw_pressed_keys.remove(k1)
