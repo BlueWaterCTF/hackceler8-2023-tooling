@@ -57,12 +57,22 @@ def get_player_can_jump_from_state(state):
             jump_override = value
     return not in_the_air or jump_override
 
-class QueueElement:
-    def __init__(self, state, dest_x, dest_y):
-        self.state = state
-        self.heuristic = self.__heuristic(dest_x, dest_y)
+def get_player_speed_from_state(state):
+    player_properties = state.player[1].properties
+    x_speed, y_speed = None, None
+    for key, value in player_properties:
+        if key == 'x_speed':
+            x_speed = value
+        elif key == 'y_speed':
+            y_speed = value
+    return x_speed, y_speed
 
-    def __heuristic(self, dest_x, dest_y):
+class QueueElement:
+    def __init__(self, state, dest_x, dest_y, start_x, start_y):
+        self.state = state
+        self.heuristic = self.__heuristic(dest_x, dest_y, start_x, start_y)
+
+    def __heuristic(self, dest_x, dest_y, start_x, start_y):
         player_x, player_y = get_player_coord_from_state(self.state)
         return math.hypot(player_x - dest_x, player_y - dest_y)
 
@@ -105,18 +115,38 @@ def get_leftmost_point(outline):
     return min_x
 
 
-def alias_coord(x, y):
-    return x * GRANULARITY // GRANULARITY, y * GRANULARITY // GRANULARITY
+def distance(x1, y1, x2, y2):
+    return ((x2 - x1)**2 + (y2 - y1)**2)**0.5
 
 
-def traceback(visited, x, y):
+def adjust_granularity(distance_to_target):
+    if distance_to_target > 500:
+        return 32
+    elif distance_to_target > 250:
+        return 16
+    elif distance_to_target > 100:
+        return 8
+    else:
+        return 4
+
+def adjust_pressing_length(distance_to_target):
+    return 5
+
+def alias_coord(x, y, target_x, target_y):
+    dist_to_target = distance(x, y, target_x, target_y)
+    granularity = adjust_granularity(dist_to_target)
+    return x // granularity * granularity, y // granularity * granularity
+
+
+def traceback(visited, x, y, target_x, target_y, x_speed, y_speed):
     path = []
     while True:
-        states_coord = visited.pop(alias_coord(x, y))
+        states_coord = visited.pop(alias_coord(x, y, target_x, target_y) + (x_speed, y_speed))
         if states_coord is None:
             break
         path.extend(reversed(states_coord[0]))
         x, y = states_coord[1]
+        x_speed, y_speed = states_coord[2]
     return reversed(path)
 
 
@@ -128,8 +158,10 @@ def navigate(game, target_x, target_y):
 
     game.simulating = True
     init_state = game.backup()
-    visited = {alias_coord(game.player.x, game.player.y): None}
-    pq = [QueueElement(init_state, target_x, target_y)]
+    visited = {alias_coord(game.player.x, game.player.y, target_x, target_y) + (game.player.x_speed, game.player.y_speed): None}
+    start_x = game.player.x
+    start_y = game.player.y
+    pq = [QueueElement(init_state, target_x, target_y, start_x, start_y)]
 
     start = time.time()
     try:
@@ -138,10 +170,11 @@ def navigate(game, target_x, target_y):
                 raise TimeoutError('Path finding timed out')
             state = heapq.heappop(pq).state
             coord = get_player_coord_from_state(state)
+            speed = get_player_speed_from_state(state)
             outline = get_outline(state.player[1].properties)
             if get_leftmost_point(outline) <= target_x <= get_rightmost_point(outline) and \
                     get_lowest_point(outline) <= target_y <= get_highest_point(outline):
-                return traceback(visited, *coord)
+                return traceback(visited, *coord, target_x, target_y, *speed)
 
             possible_keys = None
             if game.player.platformer_rules:
@@ -153,30 +186,29 @@ def navigate(game, target_x, target_y):
                 game.__dict__['raw_pressed_keys'] = frozenset((arcade.key.LSHIFT, *keys))
 
                 new_states = []
-                for _ in range(PRESSING_LENGTH):
+                for _ in range(adjust_pressing_length(distance(game.player.x, game.player.y, target_x, target_y))):
                     health = game.player.health
                     game.tick()
                     if game.player.health < health - 10 or game.player.dead:
-                        new_states = None
                         break
                     cx, cy, nb = game.physics_engine._get_collisions_list(game.player)
                     if len(cx):
-                        new_states = None
                         break
+                    collided = False
                     for o, mpv in cy:
                         if mpv[1] > 0:
-                            new_states = None
+                            collided = True
                             break
-                    if new_states is None:
+                    if collided:
                         break
                     new_states.append(game.backup())
-                if new_states is None:
+                if new_states is None or len(new_states) == 0:
                     continue
 
-                new_coord = alias_coord(game.player.x, game.player.y)
+                new_coord = alias_coord(*get_player_coord_from_state(new_states[-1]), target_x, target_y) + get_player_speed_from_state(new_states[-1])
                 if new_coord not in visited:
-                    visited[new_coord] = new_states, coord
-                    heapq.heappush(pq, QueueElement(new_states[-1], target_x, target_y))
+                    visited[new_coord] = new_states, coord, speed
+                    heapq.heappush(pq, QueueElement(new_states[-1], target_x, target_y, start_x, start_y))
     except Exception as e:
         logging.exception(e)
         game.restore(init_state)
