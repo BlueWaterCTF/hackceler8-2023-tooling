@@ -629,8 +629,8 @@ class HackedLudicer(ludicer.Ludicer):
         if not self.real_time and not self.simulating and self.inverted_controls:
             raw_pressed_keys_copy = raw_pressed_keys.copy()
             inverted_map = [
-                (vk.VK_MOVE_UP, vk.VK_MOVE_DOWN),
-                (vk.VK_MOVE_LEFT, vk.VK_MOVE_RIGHT),
+                (vk.VK_MOVE_UP[1], vk.VK_MOVE_DOWN[1]),
+                (vk.VK_MOVE_LEFT[1], vk.VK_MOVE_RIGHT[1]),
             ]
             dir_pressed = {}
             for (k1, k2) in inverted_map.keys():
@@ -726,9 +726,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             text = 'REALTIME'
         else:
             text = f'SIM ({self.__history_index + 1}/{len(self.__history)}) '
-            if vk.VK_UNDO_FRAME in self.__key_pressed and self.__history_index > 0:
+            if vk.VK_UNDO_FRAME[1] in self.__key_pressed and self.__history_index > 0:
                 text += 'UNDOING'
-            elif vk.VK_REDO_FRAME in self.__key_pressed and self.__history_index < len(self.__history) - 1:
+            elif vk.VK_REDO_FRAME[1] in self.__key_pressed and self.__history_index < len(self.__history) - 1:
                 text += 'REDOING'
             elif self.sim_should_run():
                 text += 'RUNNING'
@@ -797,10 +797,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         if self.game.real_time:
             return super().on_update(_delta_time)
 
-        if vk.VK_UNDO_FRAME in self.__key_pressed:
+        if vk.VK_UNDO_FRAME[1] in self.__key_pressed:
             self.restore_history(forward=False)
 
-        if vk.VK_REDO_FRAME in self.__key_pressed:
+        if vk.VK_REDO_FRAME[1] in self.__key_pressed:
             self.restore_history(forward=True)
 
         if self.sim_should_run():
