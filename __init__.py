@@ -604,6 +604,14 @@ class HackedLudicer(ludicer.Ludicer):
 
         self.__last_sent = None
 
+    def setup(self):
+        super().setup()
+        # For some reason the game is not set for the weapons,
+        # unlike other objects so we need to manually set them here so
+        # we can draw the traces from the player
+        for o in list(self.combat_system.weapons):
+            o.game = self
+
     def send_game_info(self):
         if self.real_time and not self.simulating:
             super().send_game_info()
