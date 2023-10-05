@@ -329,15 +329,25 @@ import map_loading.tilemap
 @dataclass(frozen=True, kw_only=True)
 class BasicTileMapBackupState:
     properties: Properties
-    objs: tuple
+    moving_platforms: tuple
 
 
 class HackedBasicTileMap(map_loading.tilemap.BasicTileMap):
-    def backup(self) -> Properties:
-        return generic_backup(self)
+    def backup(self) -> BasicTileMapBackupState:
+        return BasicTileMapBackupState(
+            properties=generic_backup(self, ('moving_platforms',)),
+            moving_platforms=tuple(
+                (platform, platform.backup())
+                for platform in self.moving_platforms
+            )
+        )
 
-    def restore(self, state: Properties):
-        generic_restore(self, state)
+    def restore(self, state: BasicTileMapBackupState):
+        generic_restore(self, state.properties)
+        self.moving_platforms.clear()
+        for platform, platform_state in state.moving_platforms:
+            platform.restore(platform_state)
+            self.moving_platforms.append(platform)
 
     # disable copy/deepcopy
     def __copy__(self):
