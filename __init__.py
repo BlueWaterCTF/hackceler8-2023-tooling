@@ -13,6 +13,7 @@ import pyperclip
 
 from hack.path_finding import navigate, get_player_coord_from_state
 import hack.constants as vk
+import hack.hack_util as hack_util
 
 import constants
 
@@ -683,6 +684,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__last_path_find = []
         self.on_click_start(None)
 
+        self.__console = False
+        self.__console_cmd_buf = ''
+        self.__console_msgs = []
+
     def append_history(self, state):
         self.__history_index += 1
         self.__history = self.__history[:self.__history_index]
@@ -744,7 +749,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             18,
             anchor_x='right',
             anchor_y='bottom',
-        )
+            )
 
         if self.game and self.game.player and self.game.player.get_height() // 2 == 15:
             arcade.draw_text(
@@ -755,7 +760,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 16,
                 anchor_x='center',
                 anchor_y='top',
-            )
+                )
 
         x, y = self.window_to_game_coord(*self.__mouse)
         arcade.draw_text(
@@ -765,6 +770,30 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             arcade.csscolor.WHITE,
             12,
         )
+
+        console_fontsize = 14
+        lines = self.__console_msgs[-5:]
+        if self.__console:
+            lines.append('>' + self.__console_cmd_buf)
+        for i,line in enumerate(lines):
+            arcade.draw_text(
+                line,
+                1,
+                self.camera.viewport_height-i*(console_fontsize*1.15)-1,
+                arcade.csscolor.BLACK,
+                console_fontsize,
+                anchor_x='left',
+                anchor_y='top',
+            )
+            arcade.draw_text(
+                line,
+                0,
+                self.camera.viewport_height-i*(console_fontsize*1.15),
+                arcade.csscolor.WHITE,
+                console_fontsize,
+                anchor_x='left',
+                anchor_y='top',
+            )
 
         self.camera.use()
         for x, y in self.__last_path_find:
@@ -871,6 +900,22 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         ))
         if self.game is None:
             return False
+        if self.__console:
+            print("STUCK IN CONSOLE")
+            if symbol == arcade.key.RETURN:
+                self.__console = False
+                cmd = self.__console_cmd_buf
+                self.__console_cmd_buf = ''
+                self.on_console_command(cmd)
+            elif symbol == arcade.key.BACKSPACE:
+                self.__console_cmd_buf = self.__console_cmd_buf[:-1]
+            elif 0x20 <= symbol < 0x7f:
+                if modifiers & arcade.key.MOD_SHIFT:
+                    c = chr(hack_util.shifted_keycode(symbol))
+                else:
+                    c = chr(symbol)
+                self.__console_cmd_buf += c
+            return True
         # To avoid some unexpected behaviors, we don't hijack single key press
         # event when there is a GUI window
         if not ctrl and self.there_is_a_window():
@@ -925,6 +970,8 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 if self.game.textbox.text_input_appeared:
                     self.game.textbox.text_input.text = pyperclip.paste()
                     return True
+            case vk.VK_CONSOLE:
+                self.__console = True
             case _:
                 self.__key_pressed.add(symbol)
                 return False
@@ -966,5 +1013,19 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 self.camera.goal_position.y + cy,
             ))
 
+    def on_console_command(self, s):
+        print(s)
+        if not s:
+            return
+        parts = s.split(' ')
+        base, args = parts[0], parts[1:]
+        self.console_add_msg('>' + s)
+        if base == 'help':
+            self.console_add_msg('NO ONE IS HERE TO HELP YOU. NO ONE LOVES YOU.')
+        else:
+            self.console_add_msg('unknown command. SKILL ISSUE YOU ARE A FAILURE.')
+
+    def console_add_msg(self, line):
+        self.__console_msgs.append(line)
 
 ludicer_gui.Hackceler8 = HackedHackceler8
