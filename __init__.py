@@ -681,6 +681,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__mouse = (0, 0)
         self.__free_camera = False
         self.__last_path_find = []
+        self.on_click_start(None)
 
     def append_history(self, state):
         self.__history_index += 1
