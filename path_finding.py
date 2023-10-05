@@ -1,7 +1,7 @@
 import math
 import heapq
 import time
-
+import logging
 import arcade
 
 POSSIBLE_KEYS = [
@@ -178,6 +178,7 @@ def navigate(game, target_x, target_y):
                     visited[new_coord] = new_states, coord
                     heapq.heappush(pq, QueueElement(new_states[-1], target_x, target_y))
     except Exception as e:
+        logging.exception(e)
         game.restore(init_state)
         if not isinstance(e, TimeoutError):
             raise
