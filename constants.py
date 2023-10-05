@@ -1,0 +1,25 @@
+import arcade as _arcade
+
+VK_MOVE_UP    = (False, _arcade.key.W)
+VK_MOVE_DOWN  = (False, _arcade.key.S)
+VK_MOVE_LEFT  = (False, _arcade.key.A)
+VK_MOVE_RIGHT = (False, _arcade.key.D)
+VK_PATHFINDER = (False, _arcade.key.H)
+
+VK_UNDO_FRAME = (False, _arcade.key.Z)
+VK_REDO_FRAME = (False, _arcade.key.X)
+
+VK_PASTE = (True, _arcade.key.V)
+
+VK_INCR_FRATE = (False, _arcade.key.PERIOD)
+VK_DECR_FRATE = (False, _arcade.key.COMMA)
+
+VK_SUBMIT_SIM = (False, _arcade.key.B)
+VK_TOGGLE_SIM = (False, _arcade.key.K)
+
+VK_SHOW_MENU = (False, _arcade.key.M)
+
+VK_CENTER_CAMERA = (False, _arcade.key.C)
+
+VK_IPDB = (False, _arcade.key.I)
+VK_ITEM_TRACER = (False, _arcade.key.L)

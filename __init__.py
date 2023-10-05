@@ -12,6 +12,7 @@ import pyglet.math
 import pyperclip
 
 from hack.path_finding import navigate, get_player_coord_from_state
+import hack.constants as vk
 
 import constants
 
@@ -626,27 +627,20 @@ class HackedLudicer(ludicer.Ludicer):
     def raw_pressed_keys(self):
         raw_pressed_keys = self.__dict__['raw_pressed_keys']
         if not self.real_time and not self.simulating and self.inverted_controls:
-            raw_pressed_keys = raw_pressed_keys.copy()
-            A = arcade.key.A in raw_pressed_keys
-            D = arcade.key.D in raw_pressed_keys
-            W = arcade.key.W in raw_pressed_keys
-            S = arcade.key.S in raw_pressed_keys
-            if A:
-                raw_pressed_keys.remove(arcade.key.A)
-            if D:
-                raw_pressed_keys.remove(arcade.key.D)
-            if W:
-                raw_pressed_keys.remove(arcade.key.W)
-            if S:
-                raw_pressed_keys.remove(arcade.key.S)
-            if A:
-                raw_pressed_keys.add(arcade.key.D)
-            if D:
-                raw_pressed_keys.add(arcade.key.A)
-            if W:
-                raw_pressed_keys.add(arcade.key.S)
-            if S:
-                raw_pressed_keys.add(arcade.key.W)
+            raw_pressed_keys_copy = raw_pressed_keys.copy()
+            inverted_map = [
+                (vk.VK_MOVE_UP, vk.VK_MOVE_DOWN),
+                (vk.VK_MOVE_LEFT, vk.VK_MOVE_RIGHT),
+            ]
+            dir_pressed = {}
+            for (k1, k2) in inverted_map.keys():
+                if k1 in raw_pressed_keys:
+                    if k2 not in raw_pressed_keys:
+                        raw_pressed_keys.remove(k1)
+                        raw_pressed_keys.add(k2)
+                elif k2 in raw_pressed_keys:
+                    raw_pressed_keys.remove(k2)
+                    raw_pressed_keys.add(k1)
         return frozenset(raw_pressed_keys)
 
     @raw_pressed_keys.setter
@@ -732,9 +726,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             text = 'REALTIME'
         else:
             text = f'SIM ({self.__history_index + 1}/{len(self.__history)}) '
-            if arcade.key.Z in self.__key_pressed and self.__history_index > 0:
+            if vk.VK_UNDO_FRAME in self.__key_pressed and self.__history_index > 0:
                 text += 'UNDOING'
-            elif arcade.key.X in self.__key_pressed and self.__history_index < len(self.__history) - 1:
+            elif vk.VK_REDO_FRAME in self.__key_pressed and self.__history_index < len(self.__history) - 1:
                 text += 'REDOING'
             elif self.sim_should_run():
                 text += 'RUNNING'
@@ -803,10 +797,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         if self.game.real_time:
             return super().on_update(_delta_time)
 
-        if arcade.key.Z in self.__key_pressed:
+        if vk.VK_UNDO_FRAME in self.__key_pressed:
             self.restore_history(forward=False)
 
-        if arcade.key.X in self.__key_pressed:
+        if vk.VK_REDO_FRAME in self.__key_pressed:
             self.restore_history(forward=True)
 
         if self.sim_should_run():
@@ -869,58 +863,46 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         hijacked = False
         # There is a bug that when command is pressed on a Mac, the value would be 512 | 64 instead of 64,
         # so we have to use & to check here
-        if modifiers == arcade.key.MOD_CTRL or modifiers & arcade.key.MOD_COMMAND:
-            hijacked = self.__on_key_press_with_ctrl_hijack(symbol)
-        else:
-            hijacked = self.__on_key_press_no_ctrl_hijack(symbol)
-
-        return hijacked
-
-    def __on_key_press_with_ctrl_hijack(self, symbol: int) -> bool:
+        ctrl = modifiers == arcade.key.MOD_CTRL or modifiers & arcade.key.MOD_COMMAND
+        logging.debug("Pressed: {symbol}{with_ctrl}".format(
+            symbol = symbol,
+            with_ctrl = " [CTRL]" if ctrl else "",
+        ))
         if self.game is None:
             return False
-        match symbol:
-            case arcade.key.V:
-                if self.game.textbox.text_input_appeared:
-                    self.game.textbox.text_input.text = pyperclip.paste()
-                    return True
-            case _:
-                return False
-        return False
-
-    def __on_key_press_no_ctrl_hijack(self, symbol: int) -> bool:
-        # To avoid some unexpected behaviors, we don't hijack single key press event when there is a GUI window
-        if self.game is None or self.there_is_a_window():
+        # To avoid some unexpected behaviors, we don't hijack single key press
+        # event when there is a GUI window
+        if not ctrl and self.there_is_a_window():
             return False
-        logging.debug("Pressed: {symbol}".format(symbol = symbol))
-        match symbol:
-            case arcade.key.PERIOD:
+
+        match (ctrl, symbol):
+            case vk.VK_INCR_FRATE:
                 self.change_refresh_rate(1)
                 return True
-            case arcade.key.COMMA:
+            case vk.VK_DECR_FRATE:
                 self.change_refresh_rate(-1)
                 return True
-            case arcade.key.B:
+            case vk.VK_SUBMIT_SIM:
                 self.submit_info()
                 return True
-            case arcade.key.K:
+            case vk.VK_TOGGLE_SIM:
                 if self.game.real_time:
                     self.game.real_time = False
                 elif len(self.__history) == 0:
                     self.game.real_time = True
                 return True
-            case arcade.key.M:
+            case vk.VK_SHOW_MENU:
                 logging.info("Showing menu")
                 self.show_menu()
                 return True
-            case arcade.key.C:
+            case vk.VK_CENTER_CAMERA:
                 if self.__free_camera:
                     self.__free_camera = False
                 else:
                     self.camera.scale = 1
                 self.center_camera_to_player()
                 return True
-            case arcade.key.H:
+            case vk.VK_PATHFINDER:
                 if self.game.real_time:
                     return False
                 history = navigate(self.game, *self.window_to_game_coord(*self.__mouse))
@@ -932,12 +914,16 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                     self.append_history(h)
                 self.game.restore(self.__history[self.__history_index])
                 return True
-            case arcade.key.I:
+            case vk.VK_IPDB:
                 ipdb.set_trace()
                 return True
-            case arcade.key.L:
+            case vk.VK_ITEM_TRACER:
                 self.game.item_tracer = not self.game.item_tracer
                 return True
+            case vk.VK_PASTE:
+                if self.game.textbox.text_input_appeared:
+                    self.game.textbox.text_input.text = pyperclip.paste()
+                    return True
             case _:
                 self.__key_pressed.add(symbol)
                 return False
