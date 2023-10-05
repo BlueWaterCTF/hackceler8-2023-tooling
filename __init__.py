@@ -1,6 +1,7 @@
 import copy
 import random
 import time
+import math
 from dataclasses import dataclass
 from typing import Optional, TypeVar
 
@@ -210,6 +211,27 @@ class HackedGenericObject(engine.generics.GenericObject):
             arcade.draw_line(self.game.player.x, self.game.player.y, self.x, self.y, self.tracer_label.color)
             self.tracer_label_outline.draw()
             self.tracer_label.draw()
+
+        # Draw soul grenade trajectory
+        ## TODO: Bind me to a key
+        if False and self.game is not None and self.game.current_mode.value == "platformer":
+            rad = abs((self.game.tics % constants.SWING_TICKS) / constants.SWING_TICKS * 2 - 1) * 0.5 * math.pi
+            cosrad = math.cos(rad)
+            sinrad = math.sin(rad)
+            x_speed, y_speed = cosrad * constants.SOUL_SPEED, sinrad * constants.SOUL_SPEED
+
+            player_w = self.game.player.get_width()
+            player_h = self.game.player.get_height()
+
+            offset = (player_w ** 2 + player_h ** 2) ** 0.5 // 2 + 20
+            offset_x, offset_y = cosrad * offset, sinrad * offset
+            if self.game.player.face_towards == "W":
+                offset_x = -offset_x
+                x_speed = -x_speed
+
+            offset_x += self.game.player.x + 10
+            offset_y += self.game.player.y + 10
+            arcade.draw_line(self.game.player.x, self.game.player.y, offset_x, offset_y, arcade.color.YELLOW)
 
         # Draw line of sight for enemies
         if self.nametype == 'Enemy':
