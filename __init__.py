@@ -687,6 +687,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__console = False
         self.__console_cmd_buf = ''
         self.__console_msgs = []
+        self.__console_commands = {
+            'help': self.cmd_help,
+            'dumplogic': self.cmd_logic,
+        }
 
     def append_history(self, state):
         self.__history_index += 1
@@ -775,6 +779,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         lines = self.__console_msgs[-5:]
         if self.__console:
             lines.append('>' + self.__console_cmd_buf)
+            for cmdname in self.__console_commands:
+                if cmdname.startswith(self.__console_cmd_buf):
+                    lines.append('>' + cmdname)
         for i,line in enumerate(lines):
             arcade.draw_text(
                 line,
@@ -1020,12 +1027,19 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         parts = s.split(' ')
         base, args = parts[0], parts[1:]
         self.console_add_msg('>' + s)
-        if base == 'help':
-            self.console_add_msg('NO ONE IS HERE TO HELP YOU. NO ONE LOVES YOU.')
+        if base in self.__console_commands:
+            self.__console_commands[base](*args)
         else:
             self.console_add_msg('unknown command. SKILL ISSUE YOU ARE A FAILURE.')
 
     def console_add_msg(self, line):
         self.__console_msgs.append(line)
+
+    def cmd_help(self):
+        self.console_add_msg('NO ONE IS HERE TO HELP YOU. NO ONE LOVES YOU.')
+
+    def cmd_logic(self):
+        pyperclip.copy("YOU SUCK")
+        self.console_add_msg('Copied to clipboard')
 
 ludicer_gui.Hackceler8 = HackedHackceler8
