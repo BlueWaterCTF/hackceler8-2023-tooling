@@ -776,13 +776,13 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         )
 
         console_fontsize = 14
-        lines = self.__console_msgs[-5:]
+        lines = [(l,arcade.csscolor.WHITE) for l in self.__console_msgs[-5:]]
         if self.__console:
-            lines.append('>' + self.__console_cmd_buf)
+            lines.append(('>' + self.__console_cmd_buf, arcade.csscolor.WHITE))
             for cmdname in self.__console_commands:
                 if cmdname.startswith(self.__console_cmd_buf):
-                    lines.append('>' + cmdname)
-        for i,line in enumerate(lines):
+                    lines.append(('>' + cmdname, arcade.csscolor.DIM_GRAY))
+        for i,(line,color) in enumerate(lines):
             arcade.draw_text(
                 line,
                 1,
@@ -796,7 +796,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 line,
                 0,
                 self.camera.viewport_height-i*(console_fontsize*1.15),
-                arcade.csscolor.WHITE,
+                color,
                 console_fontsize,
                 anchor_x='left',
                 anchor_y='top',
