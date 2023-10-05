@@ -167,6 +167,8 @@ def navigate(game, target_x, target_y):
     try:
         while len(pq) > 0:
             if time.time() - start > TIMEOUT:
+                import hack
+                hack._G_WINDOW.console_add_msg('Path finding timed out')
                 raise TimeoutError('Path finding timed out')
             state = heapq.heappop(pq).state
             coord = get_player_coord_from_state(state)
