@@ -595,6 +595,10 @@ class HackedLudicer(ludicer.Ludicer):
             sent_game_info=self.__last_sent,
         )
 
+    def dump_items(self, *args, **kwargs):
+        _G_WINDOW.console_add_msg('save_state written')
+        super().dump_items(*args, **kwargs)
+
     def restore(self, state: LudicerBackupState):
         generic_restore(self, state.properties)
 
@@ -688,6 +692,8 @@ def get_update_rate(ind):
     speed = SPEED_DIAL[ind]
     return 1 / (60 * speed)
 
+global _G_WINDOW
+
 class HackedHackceler8(ludicer_gui.Hackceler8):
     game: HackedLudicer
 
@@ -700,7 +706,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__mouse = (0, 0)
         self.__free_camera = False
         self.__last_path_find = []
-        self.on_click_start(None)
+        # self.on_click_start(None)
 
         self.__console = False
         self.__console_cmd_buf = ''
@@ -709,6 +715,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             'help': self.cmd_help,
             'dumplogic': self.cmd_logic,
         }
+
+        # silly :-)
+        global _G_WINDOW
+        _G_WINDOW = self
 
     def append_history(self, state):
         self.__history_index += 1
@@ -1051,6 +1061,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
 
     def console_add_msg(self, line):
         self.__console_msgs.append(line)
+        logging.info('CONSOLE: ' + line)
 
     def cmd_help(self):
         self.console_add_msg('NO ONE IS HERE TO HELP YOU. NO ONE LOVES YOU.')
