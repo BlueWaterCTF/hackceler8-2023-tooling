@@ -35,3 +35,60 @@ def shifted_keycode(keycode):
     }
 
     return shift_map_symbols.get(keycode, keycode)
+
+z3_preamble = '''
+from z3 import *
+
+def Buffer(inp):
+    return inp
+
+def Max(inps):
+    m = inps[0]
+    for v in inps[1:]:
+        m = If(v > m, v, m)
+    return m
+
+def Min(inps):
+    m = inps[0]
+    for v in inps[1:]:
+        m = If(v < m, v, m)
+    return m
+
+def Add(inps, mod):
+    total = sum(inps)
+    return URem(total, mod)
+
+def Multiply(inps, mod):
+    prod = inps[0]
+    for v in inps[1:]:
+        prod *= v
+    return URem(prod, mod)
+
+def Invert(inp, mod):
+    return (mod - 1) - inp
+
+def Negate(inp, mod):
+    return URem(-inp, mod)
+
+def Constant(value):
+    return value
+
+def Toggle(values, index):
+    result = values[0]
+    for i, value in enumerate(values[1:]):
+        result = If(index == (i+1), value, result)
+    return result
+
+s = Solver()
+'''
+
+z3_epilogue = '''
+
+# YOUR Z3 STATEMENTS GO HERE
+# s.add(my_output_i_wanna_solve_for == 31337)
+
+result = s.check()
+print(result)
+assert result == sat
+m = s.model()
+'''

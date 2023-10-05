@@ -288,6 +288,7 @@ components.player.Player.max_health = 100
 
 # components/weapon_systems/base.py
 import components.weapon_systems.base
+import components.logic
 
 
 class HackedWeapon(components.weapon_systems.base.Weapon):
@@ -925,7 +926,6 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         if self.game is None:
             return False
         if self.__console:
-            print("STUCK IN CONSOLE")
             if symbol == arcade.key.RETURN:
                 self.__console = False
                 cmd = self.__console_cmd_buf
@@ -1056,7 +1056,47 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.console_add_msg('NO ONE IS HERE TO HELP YOU. NO ONE LOVES YOU.')
 
     def cmd_logic(self):
-        pyperclip.copy("YOU SUCK")
+        if not self.game:
+            self.console_add_msg('no game')
+            return
+        result = []
+        for name, elem in self.game.logic_engine.logic_map.items():
+            print(elem.nametype, elem.logic_id)
+            assert name == elem.logic_id
+            match type(elem):
+                case components.logic.Buffer:
+                    args = f'inp={elem.inp}'
+                case components.logic.Max:
+                    args = f'inps={", ".join(elem.inps)}'
+                case components.logic.Min:
+                    args = f'inps={", ".join(elem.inps)}'
+                case components.logic.Add:
+                    args = f'inps={", ".join(elem.inps)}, mod={elem.modulus}'
+                case components.logic.Multiply:
+                    args = f'inps={", ".join(elem.inps)}, mod={elem.modulus}'
+                case components.logic.Invert:
+                    args = f'inp={elem.inp}, mod={elem.modulus}'
+                case components.logic.Negate:
+                    args = f'inp={elem.inp}, mod={elem.modulus}'
+                case components.logic.Constant:
+                    args = f'value={elem.value}'
+                case components.logic.Toggle:
+                    varname = f'{elem.logic_id}_index'
+                    args = f'values={elem.values}, index={varname}'
+                    result.append(f'{varname} = Int("{varname}")')
+                    result.append(f's.add({varname} >= 0)')
+                    result.append(f's.add({varname} < {len(elem.values)})')
+                case _:
+                    args = f'NotImplementedError()'
+            z3_statement = f's.add({elem.logic_id} == {elem.nametype}({args}))'
+            result.append(f'{elem.logic_id} = Int("{elem.logic_id}")')
+            result.append(z3_statement)
+
+        z3_epilogue2 = []
+        for name, elem in self.game.logic_engine.logic_map.items():
+            z3_epilogue2.append(f'print("{elem.logic_id} =", m.eval({elem.logic_id}).as_long())')
+
+        pyperclip.copy(hack_util.z3_preamble + '\n\n\n' + '\n'.join(result) + hack_util.z3_epilogue + '\n\n' + '\n'.join(z3_epilogue2))
         self.console_add_msg('Copied to clipboard')
 
 ludicer_gui.Hackceler8 = HackedHackceler8
