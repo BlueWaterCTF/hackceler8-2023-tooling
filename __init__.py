@@ -425,6 +425,17 @@ class HackedDanmakuSystem(engine.danmaku.DanmakuSystem):
 
 engine.danmaku.DanmakuSystem = HackedDanmakuSystem
 
+# components/portal.py
+import components.portal
+OriginalPortal = components.portal.Portal
+class HackedPortal(components.portal.Portal):
+    def draw(self):
+        super().draw()
+        # The Portal object is missing the super call so we manually patch it here
+        super(OriginalPortal, self).draw()
+
+components.portal.Portal = HackedPortal
+
 # engine/grenade.py
 import engine.grenade
 
@@ -613,6 +624,12 @@ class HackedLudicer(ludicer.Ludicer):
         # we can draw the traces from the player
         for o in list(self.combat_system.weapons):
             o.game = self
+
+        # The `generic_platform` are walls, which are too many.
+        # The `zone`s are not interesting so skipping it too.
+        for o in list(self.static_objs):
+            if o.name != "generic_platform" and not "zone" in o.name:
+                o.game = self
 
     def send_game_info(self):
         if self.real_time and not self.simulating:
