@@ -27,3 +27,5 @@ VK_ITEM_TRACER = (False, _arcade.key.L)
 VK_CONSOLE = (False, _arcade.key.GRAVE)
 
 VK_SOUL_GRENADE = (True, _arcade.key.T)
+
+VK_DOUBLE_SHOOT = (False, _arcade.key.V)

@@ -1066,6 +1066,24 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                     return True
             case vk.VK_CONSOLE:
                 self.__console = True
+            case vk.VK_DOUBLE_SHOOT:
+                if self.game.real_time:
+                    return False
+                self.game.__dict__['raw_pressed_keys'].add(arcade.key.SPACE)
+                self.append_history(self.game.backup())
+                self.game.tick()
+                self.game.__dict__['raw_pressed_keys'].remove(arcade.key.SPACE)
+                self.game.__dict__['raw_pressed_keys'].add(arcade.key.Q)
+                self.append_history(self.game.backup())
+                self.game.tick() 
+                self.game.__dict__['raw_pressed_keys'].remove(arcade.key.Q)
+                self.game.__dict__['raw_pressed_keys'].add(arcade.key.SPACE)
+                self.append_history(self.game.backup())
+                self.game.tick()
+                self.game.__dict__['raw_pressed_keys'].remove(arcade.key.SPACE)
+                self.append_history(self.game.backup())
+                self.game.restore(self.__history[self.__history_index])
+                return True
             case _:
                 self.__key_pressed.add(symbol)
                 return False
