@@ -3,6 +3,7 @@ import heapq
 import time
 import logging
 import arcade
+import hack
 
 POSSIBLE_KEYS = [
     (arcade.key.D,),
@@ -162,12 +163,13 @@ def navigate(game, target_x, target_y):
     start_x = game.player.x
     start_y = game.player.y
     pq = [QueueElement(init_state, target_x, target_y, start_x, start_y)]
+    n_iter = 0
 
     start = time.time()
     try:
         while len(pq) > 0:
+            n_iter += 1
             if time.time() - start > TIMEOUT:
-                import hack
                 hack._G_WINDOW.console_add_msg('Path finding timed out')
                 raise TimeoutError('Path finding timed out')
             state = heapq.heappop(pq).state
@@ -203,7 +205,8 @@ def navigate(game, target_x, target_y):
                             break
                     if collided:
                         break
-                    new_states.append(game.backup())
+                    sss = game.backup()
+                    new_states.append(sss)
                 if new_states is None or len(new_states) == 0:
                     continue
 
@@ -219,3 +222,6 @@ def navigate(game, target_x, target_y):
     finally:
         game.__dict__['raw_pressed_keys'] = initial_keys
         game.simulating = False
+        hack._G_WINDOW.console_add_msg(f'{n_iter} steps, visited {len(visited)} states, queue depth {len(pq)}')
+        game.__dict__['visited'] = list(visited.keys())
+        open('dipshit.txt','w').write(str(game.backup()))

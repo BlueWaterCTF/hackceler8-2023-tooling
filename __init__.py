@@ -347,7 +347,7 @@ class BasicTileMapBackupState:
 class HackedBasicTileMap(map_loading.tilemap.BasicTileMap):
     def backup(self) -> BasicTileMapBackupState:
         return BasicTileMapBackupState(
-            properties=generic_backup(self, ('moving_platforms',)),
+            properties=generic_backup(self, ('moving_platforms','texts','layers','static_objs','parsed_map', 'map_size')),
             moving_platforms=tuple(
                 (platform, platform.backup())
                 for platform in self.moving_platforms
@@ -882,6 +882,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.camera.use()
         for x, y in self.__last_path_find:
             arcade.draw_circle_filled(x, y, 1, arcade.csscolor.BLUE)
+        if 'visited' in self.game.__dict__:
+            for x,y,vx,vy in self.game.visited:
+                arcade.draw_circle_filled(x, y, 1, arcade.csscolor.GREEN)
         self.gui_camera.use()
 
     def change_refresh_rate(self, delta):
