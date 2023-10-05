@@ -531,7 +531,7 @@ class HackedLudicer(ludicer.Ludicer):
     objects: tuple[HackedGenericObject]
     __last_sent = None
     inverted_controls = False
-    real_time = False
+    real_time = True
     simulating = False
     item_tracer = False
 
