@@ -200,7 +200,8 @@ class HackedGenericObject(engine.generics.GenericObject):
         self._draw()
 
         # Draw a line and label to each object
-        if self.game is not None and self.game.item_tracer and self.nametype != "Player":
+        draw_label_blocklist = ["Player", "Spike"]
+        if self.game is not None and self.game.item_tracer and not self.nametype in draw_label_blocklist:
             dx = self.x - self.game.player.x
             dy = self.y - self.game.player.y
 
