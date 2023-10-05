@@ -239,8 +239,7 @@ class HackedGenericObject(engine.generics.GenericObject):
             self.title_label.draw()
 
         # Draw soul grenade trajectory
-        ## TODO: Bind me to a key
-        if False and self.game is not None and self.game.current_mode.value == "platformer":
+        if self.game is not None and self.game.soul_tracer and self.game.current_mode.value == "platformer":
             rad = abs((self.game.tics % constants.SWING_TICKS) / constants.SWING_TICKS * 2 - 1) * 0.5 * math.pi
             cosrad = math.cos(rad)
             sinrad = math.sin(rad)
@@ -591,6 +590,7 @@ class HackedLudicer(ludicer.Ludicer):
     real_time = True
     simulating = False
     item_tracer = False
+    soul_tracer = False
 
     def backup(self) -> LudicerBackupState:
         return LudicerBackupState(
@@ -1047,6 +1047,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 return True
             case vk.VK_ITEM_TRACER:
                 self.game.item_tracer = not self.game.item_tracer
+                return True
+            case vk.VK_SOUL_GRENADE:
+                self.game.soul_tracer = not self.game.soul_tracer
                 return True
             case vk.VK_PASTE:
                 if self.game.textbox.text_input_appeared:
