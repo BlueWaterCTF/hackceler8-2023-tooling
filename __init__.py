@@ -165,6 +165,7 @@ class HackedGenericObject(engine.generics.GenericObject):
         self.game = None
         self.tracer_label_outline = None
         self.tracer_label = None
+        self.title_label = None
 
     def backup(self) -> GenericObjectBackupState:
         return GenericObjectBackupState(
@@ -178,6 +179,21 @@ class HackedGenericObject(engine.generics.GenericObject):
         self.walk_data = restore_or_none(state.walk_data)
         self.hashable_outline = state.hashable_outline
 
+    def _has_health(self):
+        # NOTE: only Enemys, Players, and destroyable weapons can take damage
+        # from projectiles. (This is because when CombatSystem is initialized it
+        # is passed with only the targets including the set of Enemy objects
+        match self.nametype:
+            case 'Enemy':
+                has_health = True
+            case 'Player':
+                has_health = True
+            case 'Weapon':
+                has_health = self.destroyable
+            case _:
+                has_health = False
+        return has_health
+
     def draw(self):
         super().draw()
         self._draw()
@@ -188,28 +204,38 @@ class HackedGenericObject(engine.generics.GenericObject):
             dy = self.y - self.game.player.y
 
             distance_to_object = (dx**2 + dy**2)**0.5
-            dx = dx / distance_to_object if distance_to_object else 0
-            dy = dy / distance_to_object if distance_to_object else 0
+            adjusted_dx = dx / distance_to_object if distance_to_object else 0
+            adjusted_dy = dy / distance_to_object if distance_to_object else 0
 
             label_distance = 400
             if distance_to_object < label_distance:
                 label_distance = distance_to_object // 2
 
-            label_x = self.game.player.x + dx * label_distance
-            label_y = self.game.player.y + dy * label_distance
+            label_x = self.game.player.x + adjusted_dx * label_distance
+            label_y = self.game.player.y + adjusted_dy * label_distance
 
-            if self.tracer_label_outline is None:
-                self.tracer_label_outline = arcade.Text(self.name or self.nametype, 0, 0, arcade.color.BLACK, 11)
-                self.tracer_label = arcade.Text(self.name or self.nametype, 0, 0, string_to_color(self.nametype), 11)
-            else:
+            text_color = string_to_color(self.nametype)
+
+            arcade.draw_line(self.game.player.x, self.game.player.y, self.x, self.y, text_color)
+
+            if (abs(dx / self.game.gui.camera.scale) >= self.game.gui.camera.viewport_width // 2) or \
+                (abs(dy / self.game.gui.camera.scale) >= self.game.gui.camera.viewport_height // 2):
+                if self.tracer_label_outline is None:
+                    self.tracer_label_outline = arcade.Text(self.name or self.nametype, 0, 0, arcade.color.BLACK, 11)
+                    self.tracer_label = arcade.Text(self.name or self.nametype, 0, 0, text_color, 11)
                 self.tracer_label.x = label_x
                 self.tracer_label.y = label_y
                 self.tracer_label_outline.x = label_x + 1
                 self.tracer_label_outline.y = label_y - 1
+                self.tracer_label_outline.draw()
+                self.tracer_label.draw()
 
-            arcade.draw_line(self.game.player.x, self.game.player.y, self.x, self.y, self.tracer_label.color)
-            self.tracer_label_outline.draw()
-            self.tracer_label.draw()
+            r = self.get_rect()
+            if self.title_label is None:
+                self.title_label = arcade.Text(self.name or self.nametype, 0, 0, text_color, 11, anchor_x='center', anchor_y='baseline',)
+            self.title_label.x = (r.x1() + r.x2()) // 2
+            self.title_label.y = r.y2() + 5 if not self._has_health() else r.y2() + 15
+            self.title_label.draw()
 
         # Draw line of sight for enemies
         if self.nametype == 'Enemy':
@@ -229,21 +255,7 @@ class HackedGenericObject(engine.generics.GenericObject):
                     (0, 255, 0, 20), start_angle, end_angle)
 
         # Draw healthbar
-        #
-        # NOTE: only Enemys, Players, and destroyable weapons can take damage
-        # from projectiles. (This is because when CombatSystem is initialized it
-        # is passed with only the targets including the set of Enemy objects
-        match self.nametype:
-            case 'Enemy':
-                has_health = True
-            case 'Player':
-                has_health = True
-            case 'Weapon':
-                has_health = self.destroyable
-            case _:
-                has_health = False
-
-        if has_health:
+        if self._has_health():
             arcade.draw_xywh_rectangle_outline(self.get_leftmost_point(),
                     self.get_highest_point(), self.max_health, 10, arcade.color.GREEN)
             arcade.draw_xywh_rectangle_filled(self.get_leftmost_point(),
@@ -708,6 +720,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             'help': self.cmd_help,
             'dumplogic': self.cmd_logic,
         }
+
+    def start_game(self):
+        super().start_game()
+        self.game.gui = self
 
     def append_history(self, state):
         self.__history_index += 1
