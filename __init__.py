@@ -256,7 +256,7 @@ class HackedGenericObject(engine.generics.GenericObject):
             has_drawn_title = True
 
         # Draw soul grenade trajectory
-        if self.game is not None and self.game.soul_tracer and self.game.current_mode.value == "platformer":
+        if hasattr(self, "game") and self.game is not None and self.game.soul_tracer and self.game.current_mode.value == "platformer":
             rad = abs((self.game.tics % constants.SWING_TICKS) / constants.SWING_TICKS * 2 - 1) * 0.5 * math.pi
             cosrad = math.cos(rad)
             sinrad = math.sin(rad)
