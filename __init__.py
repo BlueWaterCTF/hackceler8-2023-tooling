@@ -1273,7 +1273,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                     result.append(f's.add({varname} >= 0)')
                     result.append(f's.add({varname} < {len(elem.values)})')
                 case components.logic.LogicDoor:
-                    result.append(f's.add({elem.inp} == 0)')
+                    result.append(f's.add({get_var(elem.inp)} == 0)')
                     continue
                 case t:
                     self.console_add_msg("Invalid type: " + str(t))
