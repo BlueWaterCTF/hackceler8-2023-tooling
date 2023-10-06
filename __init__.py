@@ -699,7 +699,7 @@ class HackedLudicer(ludicer.Ludicer):
     @property
     def raw_pressed_keys(self):
         raw_pressed_keys = self.__dict__['raw_pressed_keys']
-        if not self.real_time and not self.simulating and self.inverted_controls:
+        if not self.simulating and self.inverted_controls:
             raw_pressed_keys_copy = raw_pressed_keys.copy()
             inverted_sets = [
                 (vk.VK_MOVE_UP[1], vk.VK_MOVE_DOWN[1]),
