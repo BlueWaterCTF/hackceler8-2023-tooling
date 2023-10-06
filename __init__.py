@@ -123,13 +123,27 @@ engine.rng.RngSystem = HackedRngSystem
 # engine/walk_data.py
 import engine.walk_data
 
+@dataclass(frozen=True, kw_only=True)
+class WalkDataBackupState:
+    properties: Properties
+    rng: tuple
+
 
 class HackedWalkData(engine.walk_data.WalkData):
-    def backup(self) -> Properties:
+    def backup(self) -> WalkDataBackupState:
+        return WalkDataBackupState(
+            properties=generic_backup(self, ignore_attrs=('obj',)),
+            rng=self.rng.getstate() if self.rng else None,
+        )
         return generic_backup(self, ('obj',))
 
     def restore(self, state: Properties):
-        generic_restore(self, state)
+        generic_restore(self, state.properties)
+
+        if state.rng:
+            self.rng.setstate(state.rng)
+        else:
+            self.rng = None
 
     # disable copy/deepcopy
     def __copy__(self):
@@ -384,6 +398,7 @@ import engine.logic
 class LogicEngineBackupState:
     logic_map: tuple
     logic_countdown: int
+    spritelist: tuple
 
 
 class HackedLogicEngine(engine.logic.LogicEngine):
@@ -394,12 +409,15 @@ class HackedLogicEngine(engine.logic.LogicEngine):
                 for key, value in self.logic_map.items()
             ),
             logic_countdown=self.logic_countdown,
+            spritelist=tuple((x, generic_backup(x)) for x in self.spritelist)
         )
 
     def restore(self, state: LogicEngineBackupState):
         self.logic_countdown = state.logic_countdown
         for key, state in state.logic_map:
             self.logic_map[key].restore(state)
+        self.spritelist.clear()
+        self.spritelist.extend(generic_restore(x, y) for x, y in state.spritelist)
 
     # disable copy/deepcopy
     def __copy__(self):
@@ -1075,7 +1093,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 self.game.__dict__['raw_pressed_keys'].remove(arcade.key.SPACE)
                 self.game.__dict__['raw_pressed_keys'].add(arcade.key.Q)
                 self.append_history(self.game.backup())
-                self.game.tick() 
+                self.game.tick()
                 self.game.__dict__['raw_pressed_keys'].remove(arcade.key.Q)
                 self.game.__dict__['raw_pressed_keys'].add(arcade.key.SPACE)
                 self.append_history(self.game.backup())
