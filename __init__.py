@@ -819,6 +819,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             'help': self.cmd_help,
             'dumplogic': self.cmd_logic,
         }
+        self.__last_map_visited = None
+        self.__last_map_objects_count = 0
+        self.__last_map_major_info = None
 
 
         # silly :-)
@@ -901,7 +904,29 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 16,
                 anchor_x='center',
                 anchor_y='top',
+            )
+
+        if self.game:
+            if self.__last_map_visited != self.game.current_map and self.__last_map_objects_count != len(self.game.objects):
+                self.__last_map_visited = self.game.current_map
+                self.__last_map_objects_count = len(self.game.objects)
+                text_parts = []
+                for o in self.game.objects:
+                    if o.nametype == "Item":
+                        text_parts.append(o.display_name)
+                    elif "npc" in o.name:
+                        text_parts.append(o.name.replace('_', ' ').title())
+                self.__last_map_major_info = arcade.Text(
+                    (', ').join(text_parts),
+                    self.camera.viewport_width / 2,
+                    5,
+                    arcade.csscolor.WHITE,
+                    20,
+                    anchor_x='center',
+                    anchor_y='bottom',
                 )
+            if self.__last_map_visited:
+                self.__last_map_major_info.draw()
 
         x, y = self.window_to_game_coord(*self.__mouse)
         arcade.draw_text(
