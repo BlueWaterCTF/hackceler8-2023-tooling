@@ -634,7 +634,7 @@ class HackedLudicer(ludicer.Ludicer):
                     'current_mode',
                     'state_hash',
                     'cheating_detected',
-                    'won',
+                    'win_timestamp',
                     'prev_display_inventory',
                     'display_inventory',
                     'save_cooldown',
