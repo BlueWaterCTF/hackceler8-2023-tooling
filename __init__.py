@@ -1181,6 +1181,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         if not self.game:
             self.console_add_msg('no game')
             return
+        decls = []
         result = []
         for name, elem in self.game.logic_engine.logic_map.items():
             print(elem.nametype, elem.logic_id)
@@ -1189,13 +1190,13 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 case components.logic.Buffer:
                     args = f'inp={elem.inp}'
                 case components.logic.Max:
-                    args = f'inps={", ".join(elem.inps)}'
+                    args = f'inps=[{", ".join(elem.inps)}]'
                 case components.logic.Min:
-                    args = f'inps={", ".join(elem.inps)}'
+                    args = f'inps=[{", ".join(elem.inps)}]'
                 case components.logic.Add:
-                    args = f'inps={", ".join(elem.inps)}, mod={elem.modulus}'
+                    args = f'inps=[{", ".join(elem.inps)}], mod={elem.modulus}'
                 case components.logic.Multiply:
-                    args = f'inps={", ".join(elem.inps)}, mod={elem.modulus}'
+                    args = f'inps=[{", ".join(elem.inps)}], mod={elem.modulus}'
                 case components.logic.Invert:
                     args = f'inp={elem.inp}, mod={elem.modulus}'
                 case components.logic.Negate:
@@ -1208,11 +1209,17 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                     result.append(f'{varname} = Int("{varname}")')
                     result.append(f's.add({varname} >= 0)')
                     result.append(f's.add({varname} < {len(elem.values)})')
-                case _:
+                case components.logic.LogicDoor:
+                    result.append(f's.add({elem.inp} == 0)')
+                    continue
+                case t:
+                    self.console_add_msg("Invalid type: " + str(t))
                     args = f'NotImplementedError()'
             z3_statement = f's.add({elem.logic_id} == {elem.nametype}({args}))'
-            result.append(f'{elem.logic_id} = Int("{elem.logic_id}")')
+            decls.append(f'{elem.logic_id} = Int("{elem.logic_id}")')
             result.append(z3_statement)
+
+        result = decls + result
 
         z3_epilogue2 = []
         for name, elem in self.game.logic_engine.logic_map.items():
