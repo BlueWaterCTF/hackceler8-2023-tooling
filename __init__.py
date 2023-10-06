@@ -506,6 +506,25 @@ class HackedPortal(components.portal.Portal):
 
 components.portal.Portal = HackedPortal
 
+# components/coin.py
+
+import components.coin
+class HackedCoinCollection(components.coin.CoinCollection):
+    def backup(self) -> Properties:
+        return generic_backup(self)
+
+    def restore(self, state: Properties):
+        generic_restore(self, state)
+
+    # disable copy/deepcopy
+    def __copy__(self):
+        raise NotImplementedError
+
+    def __deepcopy__(self, _):
+        raise NotImplementedError
+
+components.coin.CoinCollection = HackedCoinCollection
+
 # engine/grenade.py
 import engine.grenade
 
