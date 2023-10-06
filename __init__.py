@@ -917,7 +917,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                     elif "npc" in o.name:
                         text_parts.append(o.name.replace('_', ' ').title())
                 self.__last_map_major_info = arcade.Text(
-                    (', ').join(text_parts),
+                    '[' + self.game.current_map.title() + "] " + (', ').join(text_parts),
                     self.camera.viewport_width / 2,
                     5,
                     arcade.csscolor.WHITE,
