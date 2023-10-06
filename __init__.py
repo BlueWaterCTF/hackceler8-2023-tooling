@@ -2,6 +2,7 @@ import copy
 import random
 import time
 import math
+from collections import deque
 from dataclasses import dataclass
 from typing import Optional, TypeVar
 
@@ -28,12 +29,14 @@ import engine.hitbox
 
 
 def smart_dup(value) -> any:
-    if isinstance(value, list):
-        return [smart_dup(v) for v in value]
+    if isinstance(value, (
+        list,
+        set,
+        deque,
+    )):
+        return value.__class__(smart_dup(v) for v in value)
     if isinstance(value, dict):
         return {k: smart_dup(v) for k, v in value.items()}
-    if isinstance(value, set):
-        return {smart_dup(v) for v in value}
     if isinstance(value, (
             engine.hitbox.Point,
     )):
@@ -49,9 +52,9 @@ def generic_backup(obj: object, ignore_attrs=()) -> Properties:
     )
 
 
-def generic_restore(obj: object, state: Properties):
+def generic_restore(obj: T, state: Properties):
     for key, value in state:
-        setattr(obj, key, value)
+        obj.__dict__[key] = value
     return obj
 
 
@@ -67,6 +70,13 @@ def restore_or_none(backup: BackupOrNone) -> T:
     obj, state = backup
     obj.restore(state)
     return obj
+
+
+def inject_class(cls, hacked_cls):
+    for subclass in cls.__subclasses__():
+        if subclass is not hacked_cls:
+            subclass.__bases__ = (hacked_cls,)
+
 
 import hashlib
 
@@ -118,6 +128,7 @@ class HackedRngSystem(engine.rng.RngSystem):
         raise NotImplementedError
 
 
+inject_class(engine.rng.RngSystem, HackedRngSystem)
 engine.rng.RngSystem = HackedRngSystem
 
 # engine/walk_data.py
@@ -139,6 +150,7 @@ class HackedWalkData(engine.walk_data.WalkData):
         raise NotImplementedError
 
 
+inject_class(engine.walk_data.WalkData, HackedWalkData)
 engine.walk_data.WalkData = HackedWalkData
 
 # engine/generics.py
@@ -309,6 +321,7 @@ class HackedGenericObject(engine.generics.GenericObject):
         raise NotImplementedError
 
 
+inject_class(engine.generics.GenericObject, HackedGenericObject)
 engine.generics.GenericObject = HackedGenericObject
 
 
@@ -337,7 +350,60 @@ class HackedWeapon(components.weapon_systems.base.Weapon):
     __deepcopy__ = None
 
 
+inject_class(components.weapon_systems.base.Weapon, HackedWeapon)
 components.weapon_systems.base.Weapon = HackedWeapon
+
+# components/danmaku.py
+import components.danmaku
+
+
+class FakeBulletIterator:
+    def __init__(self, bullet_obj, updater):
+        self.bullet_obj = bullet_obj
+        self.updater = updater
+        self.state = None
+        self.next = None
+
+    def __next__(self):
+        if self.next is not None:
+            if self.next.state is None:
+                self.bullet_obj.kill()
+            else:
+                generic_restore(self.bullet_obj, self.next.state)
+            return
+        next(self.updater)
+        if self.bullet_obj.fake_iterator is self:  # the updater might change the iterator as well...
+            self.bullet_obj.fake_iterator = FakeBulletIterator(self.bullet_obj, self.updater)
+        self.next = self.bullet_obj.fake_iterator
+        self.updater = None
+
+
+class HackedBullet(components.danmaku.Bullet):
+    fake_iterator = None
+
+    @property
+    def updater(self):
+        return self.fake_iterator
+
+    @updater.setter
+    def updater(self, value):
+        self.fake_iterator = FakeBulletIterator(self, value)
+
+    def backup(self):
+        state = generic_backup(self)
+        self.fake_iterator.state = state
+        return state
+
+    # disable copy/deepcopy
+    def __copy__(self):
+        raise NotImplementedError
+
+    def __deepcopy__(self, _):
+        raise NotImplementedError
+
+
+inject_class(components.danmaku.Bullet, HackedBullet)
+components.danmaku.Bullet = HackedBullet
 
 # map_loading/tilemap.py
 import map_loading.tilemap
@@ -374,6 +440,7 @@ class HackedBasicTileMap(map_loading.tilemap.BasicTileMap):
         raise NotImplementedError
 
 
+inject_class(map_loading.tilemap.BasicTileMap, HackedBasicTileMap)
 map_loading.tilemap.BasicTileMap = HackedBasicTileMap
 
 # engine/logic.py
@@ -409,6 +476,7 @@ class HackedLogicEngine(engine.logic.LogicEngine):
         raise NotImplementedError
 
 
+inject_class(engine.logic.LogicEngine, HackedLogicEngine)
 engine.logic.LogicEngine = HackedLogicEngine
 
 # engine/physics.py
@@ -430,6 +498,7 @@ class HackedPhysicsEngine(engine.physics.PhysicsEngine):
         raise NotImplementedError
 
 
+inject_class(engine.physics.PhysicsEngine, HackedPhysicsEngine)
 engine.physics.PhysicsEngine = HackedPhysicsEngine
 
 # engine/danmaku.py
@@ -449,16 +518,16 @@ class HackedDanmakuSystem(engine.danmaku.DanmakuSystem):
         return DanmakuSystemBackupState(
             properties=generic_backup(self, ignore_attrs=('gui', 'player', 'boss')),
             gui=smart_dup(self.gui),
-            bullets=tuple((bullet, generic_backup(bullet)) for bullet in self.bullets),
-            player_bullets=tuple((bullet, generic_backup(bullet)) for bullet in self.player_bullets),
+            bullets=tuple((bullet, bullet.backup()) for bullet in self.bullets),
+            player_bullets=tuple((bullet, bullet.backup()) for bullet in self.player_bullets),
         )
 
     def restore(self, state: DanmakuSystemBackupState):
+        self.bullets.clear(deep=False)
+        self.player_bullets.clear(deep=False)
         generic_restore(self, state.properties)
         self.gui = dict(state.gui)
-        self.bullets.clear()
         self.bullets.extend(generic_restore(bullet, state) for bullet, state in state.bullets)
-        self.player_bullets.clear()
         self.player_bullets.extend(generic_restore(bullet, state) for bullet, state in state.player_bullets)
 
     def draw(self):
@@ -473,6 +542,7 @@ class HackedDanmakuSystem(engine.danmaku.DanmakuSystem):
         raise NotImplementedError
 
 
+inject_class(engine.danmaku.DanmakuSystem, HackedDanmakuSystem)
 engine.danmaku.DanmakuSystem = HackedDanmakuSystem
 
 # components/portal.py
@@ -484,6 +554,7 @@ class HackedPortal(components.portal.Portal):
         # The Portal object is missing the super call so we manually patch it here
         super(OriginalPortal, self).draw()
 
+inject_class(components.portal.Portal, HackedPortal)
 components.portal.Portal = HackedPortal
 
 # engine/grenade.py
@@ -516,6 +587,7 @@ class HackedGrenadeSystem(engine.grenade.GrenadeSystem):
         raise NotImplementedError
 
 
+inject_class(engine.grenade.GrenadeSystem, HackedGrenadeSystem)
 engine.grenade.GrenadeSystem = HackedGrenadeSystem
 
 # engine/map_switcher.py
@@ -553,6 +625,7 @@ class HackedCombatSystem(engine.combat.CombatSystem):
         raise NotImplementedError
 
 
+inject_class(engine.combat.CombatSystem, HackedCombatSystem)
 engine.combat.CombatSystem = HackedCombatSystem
 
 # components/textbox.py
@@ -1075,7 +1148,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 self.game.__dict__['raw_pressed_keys'].remove(arcade.key.SPACE)
                 self.game.__dict__['raw_pressed_keys'].add(arcade.key.Q)
                 self.append_history(self.game.backup())
-                self.game.tick() 
+                self.game.tick()
                 self.game.__dict__['raw_pressed_keys'].remove(arcade.key.Q)
                 self.game.__dict__['raw_pressed_keys'].add(arcade.key.SPACE)
                 self.append_history(self.game.backup())
