@@ -595,6 +595,7 @@ class LudicerBackupState:
     logic_engine: BackupOrNone
     danmaku_system: BackupOrNone
     grenade_system: BackupOrNone
+    brainduck: BackupOrNone
     boss: any
     sent_game_info: dict
 
@@ -664,6 +665,7 @@ class HackedLudicer(ludicer.Ludicer):
             logic_engine=backup_or_none(self.logic_engine),
             danmaku_system=backup_or_none(self.danmaku_system),
             grenade_system=backup_or_none(self.grenade_system),
+            brainduck=backup_or_none(self.brainduck),
             boss=self.boss,
             sent_game_info=self.__last_sent,
         )
@@ -692,6 +694,7 @@ class HackedLudicer(ludicer.Ludicer):
         self.logic_engine = restore_or_none(state.logic_engine)
         self.danmaku_system = restore_or_none(state.danmaku_system)
         self.grenade_system = restore_or_none(state.grenade_system)
+        self.brainduck = restore_or_none(state.brainduck)
 
         self.__last_sent = None
 
