@@ -737,7 +737,6 @@ class HackedLudicer(ludicer.Ludicer):
             for (k1, k2) in inverted_sets:
                 if k1 in self._move_keys:
                     raw_pressed_keys.add(k2)
-        print(raw_pressed_keys)
         return frozenset(raw_pressed_keys)
 
     @raw_pressed_keys.setter
