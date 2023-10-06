@@ -1256,7 +1256,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         replay_state_keys = []
         for state in submission:
             if state is None:
-                self.replay_state_keys.append(None)
+                replay_state_keys.append(None)
                 continue
             replay_state_keys.append(json.loads(state.sent_game_info.decode())["keys"])
 
