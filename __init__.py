@@ -616,6 +616,11 @@ class HackedLudicer(ludicer.Ludicer):
     item_tracer = False
     soul_tracer = False
 
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
+        self._move_keys = set()
+
+
     def backup(self) -> LudicerBackupState:
         return LudicerBackupState(
             properties=tuple(
@@ -718,20 +723,21 @@ class HackedLudicer(ludicer.Ludicer):
     def raw_pressed_keys(self):
         raw_pressed_keys = self.__dict__['raw_pressed_keys']
         if not self.simulating and self.inverted_controls:
-            raw_pressed_keys_copy = raw_pressed_keys.copy()
+            raw_pressed_keys = raw_pressed_keys.copy()
+
             inverted_sets = [
-                (vk.VK_MOVE_UP[1], vk.VK_MOVE_DOWN[1]),
-                (vk.VK_MOVE_LEFT[1], vk.VK_MOVE_RIGHT[1]),
+                (vk.VK_MOVE_UP, vk.VK_MOVE_DOWN[1]),
+                (vk.VK_MOVE_DOWN, vk.VK_MOVE_UP[1]),
+                (vk.VK_MOVE_LEFT, vk.VK_MOVE_RIGHT[1]),
+                (vk.VK_MOVE_RIGHT, vk.VK_MOVE_LEFT[1]),
             ]
-            dir_pressed = {}
+            for (_, k) in inverted_sets:
+                if k in raw_pressed_keys:
+                    raw_pressed_keys.remove(k)
             for (k1, k2) in inverted_sets:
-                if k1 in raw_pressed_keys:
-                    if k2 not in raw_pressed_keys:
-                        raw_pressed_keys.remove(k1)
-                        raw_pressed_keys.add(k2)
-                elif k2 in raw_pressed_keys:
-                    raw_pressed_keys.remove(k2)
-                    raw_pressed_keys.add(k1)
+                if k1 in self._move_keys:
+                    raw_pressed_keys.add(k2)
+        print(raw_pressed_keys)
         return frozenset(raw_pressed_keys)
 
     @raw_pressed_keys.setter
@@ -783,6 +789,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             'help': self.cmd_help,
             'dumplogic': self.cmd_logic,
         }
+
 
         # silly :-)
         global _G_WINDOW
@@ -935,7 +942,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             return
 
         if self.game.real_time:
-            return super().on_update(_delta_time)
+            tmp = super().on_update(_delta_time)
+            self.game.inverted_controls = self.game.player.inverted_controls
+            return tmp
 
         if vk.VK_UNDO_FRAME[1] in self.__key_pressed:
             self.restore_history(forward=False)
@@ -1030,6 +1039,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         if not ctrl and self.there_is_a_window():
             return False
 
+        if (ctrl, symbol) in [vk.VK_MOVE_UP, vk.VK_MOVE_LEFT, vk.VK_MOVE_DOWN,
+                vk.VK_MOVE_RIGHT]:
+            self.game._move_keys.add((ctrl, symbol))
+
         match (ctrl, symbol):
             case vk.VK_INCR_FRATE:
                 self.change_refresh_rate(1)
@@ -1109,7 +1122,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
 
     def on_key_release(self, symbol: int, modifiers: int):
         self.__key_pressed.discard(symbol)
+        ctrl = modifiers == arcade.key.MOD_CTRL or modifiers & arcade.key.MOD_COMMAND
         if self.game is not None:
+            if (ctrl, symbol) in self.game._move_keys:
+                self.game._move_keys.remove((ctrl, symbol))
             self.game.__dict__['raw_pressed_keys'].discard(symbol)
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int):
