@@ -915,6 +915,28 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         if 'visited' in self.game.__dict__:
             for x,y,vx,vy in self.game.visited:
                 arcade.draw_circle_filled(x, y, 1, arcade.csscolor.GREEN)
+        if self.game.item_tracer:
+            for name, elem in self.game.logic_engine.logic_map.items():
+                line = name
+                if isinstance(elem, components.logic.Toggle):
+                    arcade.draw_text(
+                        f'val={elem.index}',
+                        elem.x,
+                        elem.y+14,
+                        arcade.csscolor.WHITE,
+                        12,
+                        anchor_x='left',
+                        anchor_y='top'
+                    ),
+                arcade.draw_text(
+                    line,
+                    elem.x,
+                    elem.y,
+                    arcade.csscolor.WHITE,
+                    12,
+                    anchor_x='left',
+                    anchor_y='top'
+                )
         self.gui_camera.use()
 
     def change_refresh_rate(self, delta):
@@ -1182,42 +1204,58 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         if not self.game:
             self.console_add_msg('no game')
             return
+        var_map = {}
+        def get_var(elem_):
+            if isinstance(elem_, components.logic.LogicComponent):
+                elem_ = elem_.logic_id
+            elif isinstance(elem_, str):
+                pass
+            else:
+                raise TypeError(str(type(elem_)))
+            if elem_ not in var_map:
+                var_map[elem_] = f'var_{len(var_map)}'
+            return var_map[elem_]
         result = []
         for name, elem in self.game.logic_engine.logic_map.items():
+            z3_var = get_var(elem)
+            result.append(f'{z3_var} = Int("{z3_var}") # {elem.logic_id}')
+        for name, elem in self.game.logic_engine.logic_map.items():
+            z3_var = get_var(elem)
             print(elem.nametype, elem.logic_id)
             assert name == elem.logic_id
             match type(elem):
                 case components.logic.Buffer:
-                    args = f'inp={elem.inp}'
+                    args = f'inp={get_var(elem.inp)}'
                 case components.logic.Max:
-                    args = f'inps={", ".join(elem.inps)}'
+                    args = f'inps=[{", ".join(map(get_var, elem.inps))}]'
                 case components.logic.Min:
-                    args = f'inps={", ".join(elem.inps)}'
+                    args = f'inps=[{", ".join(map(get_var, elem.inps))}]'
                 case components.logic.Add:
-                    args = f'inps={", ".join(elem.inps)}, mod={elem.modulus}'
+                    args = f'inps=[{", ".join(map(get_var, elem.inps))}], mod={elem.modulus}'
                 case components.logic.Multiply:
-                    args = f'inps={", ".join(elem.inps)}, mod={elem.modulus}'
+                    args = f'inps=[{", ".join(map(get_var, elem.inps))}], mod={elem.modulus}'
                 case components.logic.Invert:
-                    args = f'inp={elem.inp}, mod={elem.modulus}'
+                    args = f'inp={get_var(elem.inp)}, mod={elem.modulus}'
                 case components.logic.Negate:
-                    args = f'inp={elem.inp}, mod={elem.modulus}'
+                    args = f'inp={get_var(elem.inp)}, mod={elem.modulus}'
                 case components.logic.Constant:
                     args = f'value={elem.value}'
                 case components.logic.Toggle:
-                    varname = f'{elem.logic_id}_index'
+                    varname = f'{z3_var}_index'
                     args = f'values={elem.values}, index={varname}'
                     result.append(f'{varname} = Int("{varname}")')
                     result.append(f's.add({varname} >= 0)')
                     result.append(f's.add({varname} < {len(elem.values)})')
+                case components.logic.LogicDoor:
+                    args = f'inp={get_var(elem.inp)}'
                 case _:
                     args = f'NotImplementedError()'
-            z3_statement = f's.add({elem.logic_id} == {elem.nametype}({args}))'
-            result.append(f'{elem.logic_id} = Int("{elem.logic_id}")')
+            z3_statement = f's.add({z3_var} == {elem.nametype}({args}))'
             result.append(z3_statement)
 
         z3_epilogue2 = []
         for name, elem in self.game.logic_engine.logic_map.items():
-            z3_epilogue2.append(f'print("{elem.logic_id} =", m.eval({elem.logic_id}).as_long())')
+            z3_epilogue2.append(f'print("{get_var(elem)} =", m.eval({get_var(elem)}).as_long())')
 
         pyperclip.copy(hack_util.z3_preamble + '\n\n\n' + '\n'.join(result) + hack_util.z3_epilogue + '\n\n' + '\n'.join(z3_epilogue2))
         self.console_add_msg('Copied to clipboard')

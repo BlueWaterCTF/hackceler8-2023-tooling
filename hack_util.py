@@ -39,6 +39,11 @@ def shifted_keycode(keycode):
 z3_preamble = '''
 from z3 import *
 
+BITVEC_SIZE=64
+
+def Int(x):
+    return BitVec(x, BITVEC_SIZE)
+
 def Buffer(inp):
     return inp
 
@@ -74,10 +79,13 @@ def Constant(value):
     return value
 
 def Toggle(values, index):
-    result = values[0]
+    result = BitVecVal(values[0],BITVEC_SIZE)
     for i, value in enumerate(values[1:]):
-        result = If(index == (i+1), value, result)
+        result = If(index == (i+1), BitVecVal(value,BITVEC_SIZE), result)
     return result
+
+def LogicDoor(inp):
+    return inp
 
 s = Solver()
 '''
