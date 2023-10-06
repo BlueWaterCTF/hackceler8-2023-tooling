@@ -174,13 +174,19 @@ class FakeHashableOutline(set):
         return self.string
 
 
+G_GenericObjectTracerLabelOutlines = dict()
+G_GenericObjectTracerLabels = dict()
+G_GenericObjectTitleLabels = dict()
+
 class HackedGenericObject(engine.generics.GenericObject):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.game = None
-        self.tracer_label_outline = None
-        self.tracer_label = None
-        self.title_label = None
+
+    def __del__(self):
+        G_GenericObjectTracerLabelOutlines.pop(id(self), None)
+        G_GenericObjectTracerLabels.pop(id(self), None)
+        G_GenericObjectTitleLabels.pop(id(self), None)
 
     def backup(self) -> GenericObjectBackupState:
         return GenericObjectBackupState(
@@ -216,7 +222,7 @@ class HackedGenericObject(engine.generics.GenericObject):
         has_drawn_title = False
         # Draw a line and label to each object
         draw_label_blocklist = ["Player", "Spike"]
-        if getattr(self, 'game', None) is not None and self.game.item_tracer and not self.nametype in draw_label_blocklist:
+        if hasattr(self, 'game') and self.game and self.game.item_tracer and not self.nametype in draw_label_blocklist:
             dx = self.x - self.game.player.x
             dy = self.y - self.game.player.y
 
@@ -235,26 +241,24 @@ class HackedGenericObject(engine.generics.GenericObject):
 
             arcade.draw_line(self.game.player.x, self.game.player.y, self.x, self.y, text_color)
 
-            if getattr(self, 'tracer_label_outline', None) is not None and getattr(self, 'tracer_label', None) is not None:
-                if (abs(dx / self.game.gui.camera.scale) >= self.game.gui.camera.viewport_width // 2) or \
-                    (abs(dy / self.game.gui.camera.scale) >= self.game.gui.camera.viewport_height // 2):
-                    if self.tracer_label_outline is None:
-                        self.tracer_label_outline = arcade.Text(self.name or self.nametype, 0, 0, arcade.color.BLACK, 11)
-                        self.tracer_label = arcade.Text(self.name or self.nametype, 0, 0, text_color, 11)
-                    self.tracer_label.x = label_x
-                    self.tracer_label.y = label_y
-                    self.tracer_label_outline.x = label_x + 1
-                    self.tracer_label_outline.y = label_y - 1
-                    self.tracer_label_outline.draw()
-                    self.tracer_label.draw()
+            if (abs(dx / self.game.gui.camera.scale) >= self.game.gui.camera.viewport_width // 2) or \
+                (abs(dy / self.game.gui.camera.scale) >= self.game.gui.camera.viewport_height // 2):
+                if not id(self) in G_GenericObjectTracerLabelOutlines:
+                    G_GenericObjectTracerLabelOutlines[id(self)] = arcade.Text(self.name or self.nametype or '', 0, 0, arcade.color.BLACK, 11)
+                    G_GenericObjectTracerLabels[id(self)] = arcade.Text(self.name or self.nametype or '', 0, 0, text_color, 11)
+                G_GenericObjectTracerLabels[id(self)].x = label_x
+                G_GenericObjectTracerLabels[id(self)].y = label_y
+                G_GenericObjectTracerLabelOutlines[id(self)].x = label_x + 1
+                G_GenericObjectTracerLabelOutlines[id(self)].y = label_y - 1
+                G_GenericObjectTracerLabelOutlines[id(self)].draw()
+                G_GenericObjectTracerLabels[id(self)].draw()
 
-            if getattr(self, 'title_label', None) is not None:
-                r = self.get_rect()
-                if self.title_label is None:
-                    self.title_label = arcade.Text(self.name or self.nametype, 0, 0, text_color, 11, anchor_x='center', anchor_y='baseline',)
-                self.title_label.x = (r.x1() + r.x2()) // 2
-                self.title_label.y = r.y2() + 5
-                self.title_label.draw()
+            r = self.get_rect()
+            if not id(self) in G_GenericObjectTitleLabels:
+                G_GenericObjectTitleLabels[id(self)] = arcade.Text(self.name or self.nametype, 0, 0, text_color, 11, anchor_x='center', anchor_y='baseline',)
+            G_GenericObjectTitleLabels[id(self)].x = (r.x1() + r.x2()) // 2
+            G_GenericObjectTitleLabels[id(self)].y = r.y2() + 5
+            G_GenericObjectTitleLabels[id(self)].draw()
             has_drawn_title = True
 
         # Draw soul grenade trajectory
