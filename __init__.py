@@ -17,6 +17,7 @@ import hack.constants as vk
 import hack.hack_util as hack_util
 
 import constants
+import json
 
 constants.FONT_NAME = "Arial"
 
@@ -823,6 +824,8 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__last_map_objects_count = 0
         self.__last_map_major_info = None
 
+        self.replay_state_keys = []
+
 
         # silly :-)
         global _G_WINDOW
@@ -1049,10 +1052,17 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__history_index = -1
         if not self.game.net:
             return
+        self.replay_state_keys = []
         for state in submission:
             if state is None:
+                self.replay_state_keys.append(None)
                 continue
+            self.replay_state_keys.append(json.loads(state.sent_game_info.decode())["keys"])
             self.game.net.send_one(state.sent_game_info)
+        print("SICE")
+        print(self.replay_state_keys)
+        with open("moves.txt", "wb") as f:
+            f.write(json.dumps(self.replay_state_keys).encode())
         # for _ in range(20):
         #     time.sleep(0.1)
         #     self.game.recv_from_server()
@@ -1177,20 +1187,13 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             case vk.VK_DOUBLE_SHOOT:
                 if self.game.real_time:
                     return False
-                self.game.__dict__['raw_pressed_keys'].add(arcade.key.SPACE)
-                self.append_history(self.game.backup())
-                self.game.tick()
-                self.game.__dict__['raw_pressed_keys'].remove(arcade.key.SPACE)
-                self.game.__dict__['raw_pressed_keys'].add(arcade.key.Q)
-                self.append_history(self.game.backup())
-                self.game.tick()
-                self.game.__dict__['raw_pressed_keys'].remove(arcade.key.Q)
-                self.game.__dict__['raw_pressed_keys'].add(arcade.key.SPACE)
-                self.append_history(self.game.backup())
-                self.game.tick()
-                self.game.__dict__['raw_pressed_keys'].remove(arcade.key.SPACE)
-                self.append_history(self.game.backup())
-                self.game.restore(self.__history[self.__history_index])
+                with open("moves.txt", "r") as f:
+                    keys_to_send = json.load(f)
+                for keys in keys_to_send:
+                    self.game.__dict__['raw_pressed_keys'] = set(keys) if keys is not None else set()
+                    self.game.tick()
+                    self.append_history(self.game.backup())
+                self.game.__dict__['raw_pressed_keys'] = set()
                 return True
             case _:
                 self.__key_pressed.add(symbol)
