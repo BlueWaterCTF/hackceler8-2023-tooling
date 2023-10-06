@@ -819,12 +819,12 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__console_commands = {
             'help': self.cmd_help,
             'dumplogic': self.cmd_logic,
+            'dumpsim': self.cmd_dumpsim,
+            'loadsim': self.cmd_loadsim
         }
         self.__last_map_visited = None
         self.__last_map_objects_count = 0
         self.__last_map_major_info = None
-
-        self.replay_state_keys = []
 
 
         # silly :-)
@@ -1052,17 +1052,10 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__history_index = -1
         if not self.game.net:
             return
-        self.replay_state_keys = []
         for state in submission:
             if state is None:
-                self.replay_state_keys.append(None)
                 continue
-            self.replay_state_keys.append(json.loads(state.sent_game_info.decode())["keys"])
             self.game.net.send_one(state.sent_game_info)
-        print("SICE")
-        print(self.replay_state_keys)
-        with open("moves.txt", "wb") as f:
-            f.write(json.dumps(self.replay_state_keys).encode())
         # for _ in range(20):
         #     time.sleep(0.1)
         #     self.game.recv_from_server()
@@ -1187,13 +1180,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             case vk.VK_DOUBLE_SHOOT:
                 if self.game.real_time:
                     return False
-                with open("moves.txt", "r") as f:
-                    keys_to_send = json.load(f)
-                for keys in keys_to_send:
-                    self.game.__dict__['raw_pressed_keys'] = set(keys) if keys is not None else set()
-                    self.game.tick()
-                    self.append_history(self.game.backup())
-                self.game.__dict__['raw_pressed_keys'] = set()
+                
                 return True
             case _:
                 self.__key_pressed.add(symbol)
@@ -1257,6 +1244,34 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
 
     def cmd_help(self):
         self.console_add_msg('NO ONE IS HERE TO HELP YOU. NO ONE LOVES YOU.')
+
+    def cmd_dumpsim(self, filename):
+
+        if self.__history_index < 0:
+            return
+        submission = self.__history[:self.__history_index + 1]
+        if not self.game.net:
+            return
+
+        replay_state_keys = []
+        for state in submission:
+            if state is None:
+                self.replay_state_keys.append(None)
+                continue
+            replay_state_keys.append(json.loads(state.sent_game_info.decode())["keys"])
+
+        with open(filename, "w") as f:
+            json.dump(replay_state_keys, f)
+
+    def cmd_loadsim(self, filename):
+        with open(filename, "r") as f:
+                keys_to_send = json.load(f)
+
+        for keys in keys_to_send:
+            self.game.__dict__['raw_pressed_keys'] = set(keys) if keys is not None else set()
+            self.game.tick()
+            self.append_history(self.game.backup())
+        self.game.__dict__['raw_pressed_keys'] = set()
 
     def cmd_logic(self):
         if not self.game:
