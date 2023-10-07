@@ -582,7 +582,6 @@ class HackedPortal(components.portal.Portal):
 inject_class(components.portal.Portal, HackedPortal)
 components.portal.Portal = HackedPortal
 
-
 # engine/grenade.py
 import engine.grenade
 
@@ -993,7 +992,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 for o in self.game.objects:
                     if o.nametype == "Item":
                         text_parts.append(o.display_name)
-                    elif "npc" in o.name:
+                    elif o.name is not None and "npc" in o.name:
                         text_parts.append(o.name.replace('_', ' ').title())
                 self.__last_map_major_info = arcade.Text(
                     '[' + self.game.current_map.title() + "] " + (', ').join(text_parts),
