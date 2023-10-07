@@ -1,3 +1,0 @@
-pyperclip
-ipdb
-z3_solver
