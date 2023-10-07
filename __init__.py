@@ -439,7 +439,7 @@ class BasicTileMapBackupState:
 class HackedBasicTileMap(map_loading.tilemap.BasicTileMap):
     def backup(self) -> BasicTileMapBackupState:
         return BasicTileMapBackupState(
-            properties=generic_backup(self, ('moving_platforms','texts','layers','static_objs','parsed_map', 'map_size')),
+            properties=generic_backup(self, ('moving_platforms', 'static_objs')),
             moving_platforms=tuple(
                 (platform, platform.backup())
                 for platform in self.moving_platforms
