@@ -27,5 +27,17 @@ VK_ITEM_TRACER = (False, _arcade.key.L)
 VK_CONSOLE = (False, _arcade.key.GRAVE)
 
 VK_SOUL_GRENADE = (True, _arcade.key.T)
+VK_FINISHED_MAPS_TRACER = (True, _arcade.key.F)
 
 VK_DOUBLE_SHOOT = (False, _arcade.key.V)
+
+# !!! This needs to be changed every game because we don't know what keys are where yet
+ITEMS_TO_MAP = {
+    #  "key_violet" : "cctv",
+    #  "key_purple" : "water",
+    #  "key_orange" : "rusty",
+    #  "key_blue" : "space",
+    #  "goggles" : "maze",
+    #  "boots" : "spike",
+    #  "flag_danmaku" : "danmaku",
+}
