@@ -724,7 +724,22 @@ class HackedLudicer(ludicer.Ludicer):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
         self._move_keys = set()
+        self.real_seed = 0
 
+
+    def init_random(self):
+        if not self.is_server:
+            if self.real_seed == 0:
+                if self.rand_seed is None:
+                    self.rand_seed = 42
+                    self.rng_system.seed(self.rand_seed)
+            else:
+                self.rand_seed = self.real_seed
+                self.rng_system.seed(self.real_seed)
+        # Sync seed with client on startup.
+        elif self.rand_seed is not None:
+            self.rng_system.seed(self.rand_seed)
+            self.rand_seed = None
 
     def backup(self) -> LudicerBackupState:
         return LudicerBackupState(
@@ -897,7 +912,8 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             'dumplogic': self.cmd_logic,
             'dumpsim': self.cmd_dumpsim,
             'loadsim': self.cmd_loadsim,
-            'loadsimreal': self.cmd_loadsim_real
+            'seed': self.cmd_seed,
+            'loadsimreal': self.cmd_loadsim_real,
         }
         self.__last_map_visited = None
         self.__last_map_objects_count = 0
@@ -1367,6 +1383,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
 
         with open(filename, "w") as f:
             json.dump(replay_state_keys, f)
+
+    def cmd_seed(self, seed = 0):
+        self.game.real_seed = int(seed)
 
     def cmd_loadsim(self, filename=None):
         if self.game.real_time:
