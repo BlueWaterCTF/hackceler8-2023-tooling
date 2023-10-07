@@ -526,6 +526,29 @@ class HackedPhysicsEngine(engine.physics.PhysicsEngine):
 inject_class(engine.physics.PhysicsEngine, HackedPhysicsEngine)
 engine.physics.PhysicsEngine = HackedPhysicsEngine
 
+# engine/ludifier.py
+import engine.ludifier
+
+
+class HackedLudifier(engine.ludifier.Ludifier):
+    def backup(self) -> Properties:
+        return generic_backup(self, ('map',))
+
+    def restore(self, state: Properties):
+        generic_restore(self, state)
+
+    # disable copy/deepcopy
+    def __copy__(self):
+        raise NotImplementedError
+
+    def __deepcopy__(self, _):
+        raise NotImplementedError
+
+
+inject_class(engine.ludifier.Ludifier, HackedLudifier)
+engine.ludifier.Ludifier = HackedLudifier
+
+
 # engine/danmaku.py
 import engine.danmaku
 
@@ -673,6 +696,7 @@ class LudicerBackupState:
     combat_system: BackupOrNone
     physics_engine: BackupOrNone
     logic_engine: BackupOrNone
+    level_modifier: BackupOrNone
     danmaku_system: BackupOrNone
     grenade_system: BackupOrNone
     boss: any
@@ -743,6 +767,7 @@ class HackedLudicer(ludicer.Ludicer):
             combat_system=backup_or_none(self.combat_system),
             physics_engine=backup_or_none(self.physics_engine),
             logic_engine=backup_or_none(self.logic_engine),
+            level_modifier=backup_or_none(self.level_modifier),
             danmaku_system=backup_or_none(self.danmaku_system),
             grenade_system=backup_or_none(self.grenade_system),
             boss=self.boss,
@@ -771,6 +796,7 @@ class HackedLudicer(ludicer.Ludicer):
         self.combat_system = restore_or_none(state.combat_system)
         self.physics_engine = restore_or_none(state.physics_engine)
         self.logic_engine = restore_or_none(state.logic_engine)
+        self.level_modifier = restore_or_none(state.level_modifier)
         self.danmaku_system = restore_or_none(state.danmaku_system)
         self.grenade_system = restore_or_none(state.grenade_system)
 
