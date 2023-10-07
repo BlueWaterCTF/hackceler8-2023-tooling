@@ -97,6 +97,34 @@ def string_to_color(s: str) -> tuple:
     return (r, g, b)
 
 
+# engine/sprite.py
+import engine.sprite
+
+
+@dataclass(frozen=True, kw_only=True)
+class SpriteBackupState:
+    properties: Properties
+    animation: BackupOrNone
+
+
+class HackedSprite(engine.sprite.Sprite):
+    def backup(self) -> SpriteBackupState:
+        return SpriteBackupState(
+            properties=generic_backup(self, ('tileset_path', 'tileset', 'tiles', 'textures', 'animation')),
+            animation=(self.animation, generic_backup(self.animation, ('textures', 'frames'))) if self.animation else None,
+        )
+
+    def restore(self, state: SpriteBackupState):
+        generic_restore(self, state.properties)
+        if state.animation is None:
+            self.animation = None
+        else:
+            self.animation = generic_restore(*state.animation)
+
+
+inject_class(engine.sprite.Sprite, HackedSprite)
+engine.sprite.Sprite = HackedSprite
+
 # engine/rng.py
 import engine.rng
 
@@ -177,6 +205,7 @@ class GenericObjectBackupState:
     properties: Properties
     walk_data: BackupOrNone
     hashable_outline: tuple
+    sprite: BackupOrNone
 
 
 class FakeHashableOutline(set):
@@ -203,15 +232,17 @@ class HackedGenericObject(engine.generics.GenericObject):
 
     def backup(self) -> GenericObjectBackupState:
         return GenericObjectBackupState(
-            properties=generic_backup(self, ignore_attrs=('game', 'hashable_outline')),
+            properties=generic_backup(self, ignore_attrs=('game', 'hashable_outline', 'sprite')),
             walk_data=backup_or_none(self.walk_data),
             hashable_outline=copy.deepcopy(self.hashable_outline),
+            sprite=backup_or_none(getattr(self, 'sprite', None)),
         )
 
     def restore(self, state: GenericObjectBackupState):
         generic_restore(self, state.properties)
         self.walk_data = restore_or_none(state.walk_data)
         self.hashable_outline = state.hashable_outline
+        self.sprite = restore_or_none(state.sprite)
 
     def _has_health(self):
         # NOTE: only Enemys, Players, and destroyable weapons can take damage
@@ -1392,7 +1423,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             return
 
         with open(filename, "r") as f:
-                keys_to_send = json.load(f)
+            keys_to_send = json.load(f)
 
         for keys in keys_to_send:
             print("Sending -> ", keys)
