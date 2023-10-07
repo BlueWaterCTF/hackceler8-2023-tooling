@@ -1390,9 +1390,13 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 keys_to_send = json.load(f)
 
         for idx, keys in enumerate(keys_to_send):
+            self.game.send_game_info()
             self.game.__dict__['raw_pressed_keys'] = set(keys) if keys is not None else set()
             self.game.tick()
-            self.game.send_game_info()
+        self.game.send_game_info()
+
+        import time
+        time.sleep(4)
         print("HERE")
 
     def cmd_logic(self):
