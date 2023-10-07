@@ -30,6 +30,7 @@ VK_SOUL_GRENADE = (True, _arcade.key.T)
 VK_FINISHED_MAPS_TRACER = (True, _arcade.key.F)
 
 VK_DOUBLE_SHOOT = (False, _arcade.key.V)
+VK_TIC_SHOOT = (False, _arcade.key.Y)
 
 # !!! This needs to be changed every game because we don't know what keys are where yet
 ITEMS_TO_MAP = {

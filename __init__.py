@@ -1318,6 +1318,23 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             case vk.VK_SOUL_GRENADE:
                 self.game.soul_tracer = not self.game.soul_tracer
                 return True
+            case vk.VK_TIC_SHOOT:
+                self.game.__dict__['raw_pressed_keys'].clear()
+                while self.game.tics % 3 != 0:
+                    self.game.__dict__['raw_pressed_keys'].clear()
+                    self.game.__dict__['raw_pressed_keys'].add(arcade.key.LSHIFT)
+                    self.game.tick()
+                self.game.__dict__['raw_pressed_keys'].clear()
+                self.game.__dict__['raw_pressed_keys'].add(arcade.key.P)
+                self.game.tick()
+                self.game.__dict__['raw_pressed_keys'].clear()
+                self.game.__dict__['raw_pressed_keys'].add(arcade.key.SPACE)
+                self.game.tick()
+                self.game.__dict__['raw_pressed_keys'].clear()
+                self.game.__dict__['raw_pressed_keys'].add(arcade.key.P)
+                self.game.tick()
+                self.game.__dict__['raw_pressed_keys'].clear()
+                return True
             case vk.VK_FINISHED_MAPS_TRACER:
                 self.game.finished_maps_tracer = not self.game.finished_maps_tracer
                 return True
