@@ -691,7 +691,7 @@ class HackedLudicer(ludicer.Ludicer):
     objects: tuple[HackedGenericObject]
     __last_sent = None
     inverted_controls = False
-    real_time = True
+    real_time = False
     simulating = False
     item_tracer = False
     soul_tracer = False
@@ -866,6 +866,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         self.__console_cmd_buf = ''
         self.__console_msgs = []
         self.__console_commands = {
+            'player_pos': self.cmd_playerpos,
             'help': self.cmd_help,
             'dumplogic': self.cmd_logic,
             'dumpsim': self.cmd_dumpsim,
@@ -1315,6 +1316,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
     def console_add_msg(self, line):
         self.__console_msgs.append(line)
         logging.info('CONSOLE: ' + line)
+
+    def cmd_playerpos(self):
+        self.console_add_msg(f'PLAYER POSITION: ({self.game.player.x}, {self.game.player.y})')
 
     def cmd_help(self):
         self.console_add_msg('NO ONE IS HERE TO HELP YOU. NO ONE LOVES YOU.')
