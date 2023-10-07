@@ -971,7 +971,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
 
         if self.game and self.game.finished_maps_tracer:
             for item in self.game.global_match_items.items:
-                if item.collected_time > 0:
+                if item.collected_time > 0 and item.name in vk.ITEMS_TO_MAP:
                     item_map = vk.ITEMS_TO_MAP[item.name]
                     arena_name = None
                     for k, v in self.game.arena_mapping.items():
