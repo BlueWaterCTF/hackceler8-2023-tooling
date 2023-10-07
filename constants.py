@@ -33,11 +33,11 @@ VK_DOUBLE_SHOOT = (False, _arcade.key.V)
 
 # !!! This needs to be changed every game because we don't know what keys are where yet
 ITEMS_TO_MAP = {
-    "key_violet" : "cctv",
-    "key_purple" : "water",
-    "key_orange" : "rusty",
-    "key_blue" : "space",
-    "goggles" : "logic",
-    "boots" : "speed",
-    "flag_llm" : "llm",
+    # "key_violet" : "cctv",
+    # "key_purple" : "water",
+    # "key_orange" : "rusty",
+    # "key_blue" : "space",
+    # "goggles" : "logic",
+    # "boots" : "speed",
+    # "flag_llm" : "llm",
 }
