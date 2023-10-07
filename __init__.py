@@ -1245,13 +1245,13 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
     def cmd_help(self):
         self.console_add_msg('NO ONE IS HERE TO HELP YOU. NO ONE LOVES YOU.')
 
-    def cmd_dumpsim(self, filename):
+    def cmd_dumpsim(self, filename=None):
+        if filename is None:
+            return
 
         if self.__history_index < 0:
             return
         submission = self.__history[:self.__history_index + 1]
-        if not self.game.net:
-            return
 
         replay_state_keys = []
         for state in submission:
@@ -1263,7 +1263,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         with open(filename, "w") as f:
             json.dump(replay_state_keys, f)
 
-    def cmd_loadsim(self, filename):
+    def cmd_loadsim(self, filename=None):
         with open(filename, "r") as f:
                 keys_to_send = json.load(f)
 
