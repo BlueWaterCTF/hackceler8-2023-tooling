@@ -896,7 +896,8 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             'help': self.cmd_help,
             'dumplogic': self.cmd_logic,
             'dumpsim': self.cmd_dumpsim,
-            'loadsim': self.cmd_loadsim
+            'loadsim': self.cmd_loadsim,
+            'loadsimreal': self.cmd_loadsim_real
         }
         self.__last_map_visited = None
         self.__last_map_objects_count = 0
@@ -1368,14 +1369,31 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             json.dump(replay_state_keys, f)
 
     def cmd_loadsim(self, filename=None):
+        if self.game.real_time:
+            return
+
         with open(filename, "r") as f:
                 keys_to_send = json.load(f)
 
         for keys in keys_to_send:
+            print("Sending -> ", keys)
             self.game.__dict__['raw_pressed_keys'] = set(keys) if keys is not None else set()
             self.game.tick()
             self.append_history(self.game.backup())
         self.game.__dict__['raw_pressed_keys'] = set()
+
+    def cmd_loadsim_real(self, filename=None):
+        if not self.game.real_time:
+            return
+
+        with open(filename, "r") as f:
+                keys_to_send = json.load(f)
+
+        for idx, keys in enumerate(keys_to_send):
+            self.game.__dict__['raw_pressed_keys'] = set(keys) if keys is not None else set()
+            self.game.tick()
+            self.game.send_game_info()
+        print("HERE")
 
     def cmd_logic(self):
         if not self.game:
