@@ -1268,7 +1268,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             case vk.VK_SOUL_GRENADE:
                 self.game.soul_tracer = not self.game.soul_tracer
                 return True
-             case vk.VK_FINISHED_MAPS_TRACER:
+            case vk.VK_FINISHED_MAPS_TRACER:
                 self.game.finished_maps_tracer = not self.game.finished_maps_tracer
                 return True
             case vk.VK_PASTE:
