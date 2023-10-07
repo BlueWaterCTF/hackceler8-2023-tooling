@@ -643,6 +643,7 @@ class HackedLudicer(ludicer.Ludicer):
     simulating = False
     item_tracer = False
     soul_tracer = False
+    finished_maps_tracer = False
 
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
@@ -874,6 +875,13 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
         actual_y = (y - half_height) * self.camera.scale + half_height + self.camera.goal_position.y
         return actual_x, actual_y
 
+    def game_to_window_coord(self, x, y):
+        half_width = self.camera.viewport_width / 2
+        half_height = self.camera.viewport_height / 2
+        actual_x = (x - self.camera.goal_position.x - half_width) / self.camera.scale + half_width
+        actual_y = (y - self.camera.goal_position.y - half_height) / self.camera.scale + half_height
+        return actual_x, actual_y
+
     def extra_draw(self):
         if self.game.real_time:
             text = 'REALTIME'
@@ -887,6 +895,22 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 text += 'RUNNING'
             else:
                 text += 'PAUSED'
+
+        if self.game and self.game.finished_maps_tracer:
+            for item in self.game.global_match_items.items:
+                if item.collected_time > 0:
+                    item_map = vk.ITEMS_TO_MAP[item.name]
+                    arena_name = None
+                    for k, v in self.game.arena_mapping.items():
+                        if v == item_map:
+                            arena_name = k
+                    if arena_name:
+                        for o in self.game.static_objs:
+                            if o.name == arena_name:
+                                p0x, p0y = self.game_to_window_coord(o.perimeter[0].x, o.perimeter[0].y)
+                                p1x, p1y = self.game_to_window_coord(o.perimeter[1].x, o.perimeter[1].y)
+                                p2x, p2y = self.game_to_window_coord(o.perimeter[2].x, o.perimeter[2].y)
+                                arcade.draw_lrtb_rectangle_filled(p0x, p1x, p0y, p2y, arcade.color.RED)
 
         arcade.draw_text(
             text + ' (%.1fx)' % (SPEED_DIAL[self.__speed_dial]),
@@ -1171,6 +1195,9 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             case vk.VK_SOUL_GRENADE:
                 self.game.soul_tracer = not self.game.soul_tracer
                 return True
+             case vk.VK_FINISHED_MAPS_TRACER:
+                self.game.finished_maps_tracer = not self.game.finished_maps_tracer
+                return True
             case vk.VK_PASTE:
                 if self.game.textbox.text_input_appeared:
                     self.game.textbox.text_input.text = pyperclip.paste()
@@ -1180,7 +1207,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
             case vk.VK_DOUBLE_SHOOT:
                 if self.game.real_time:
                     return False
-                
+
                 return True
             case _:
                 self.__key_pressed.add(symbol)
