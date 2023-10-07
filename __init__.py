@@ -985,7 +985,7 @@ class HackedHackceler8(ludicer_gui.Hackceler8):
                 anchor_y='top',
             )
 
-        if self.game:
+        if self.game and self.game.finished_maps_tracer:
             if self.__last_map_visited != self.game.current_map and self.__last_map_objects_count != len(self.game.objects):
                 self.__last_map_visited = self.game.current_map
                 self.__last_map_objects_count = len(self.game.objects)
