@@ -2,11 +2,15 @@
 
 This repository contains tooling for Hackceler8 2023, made by team Blue Water.
 
+`hackceler8` branch includes the basic template for the demo game. See each branch that includes fixes and adaptations done for each level.
+
 ## Usage
 
 Put files under this repository into `game/hack`, and put `import hack` at the top of `client.py`.
 
-Then in `ludicer_gui.py`, find `on_draw()` method and add `self.extra_draw()` before `arcade.finish_render()`.
+Install requirements by `pip install -r hack_requirements.txt`
+
+In `ludicer_gui.py`, find `on_draw()` method and add `self.extra_draw()` before `arcade.finish_render()`.
 
 Then you are good to go.
 
